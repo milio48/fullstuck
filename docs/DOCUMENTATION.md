@@ -61,6 +61,7 @@ Ketika sebuah request masuk (biasanya diteruskan melalui `.htaccess` ke `fullstu
 - `fst_upload($key, $folder, $options)`: Helper mempermudah proses upload file lengkap dengan filter ekstensi dan size.
 
 ### Utility & Debugging
+- `fst_validate($data, $rules)`: Memvalidasi array data (misal `$_POST`) terhadap aturan. Contoh aturan: `'required|email|min:5|max:20|numeric|in:a,b,c'`. Mengembalikan array `['valid' => bool, 'errors' => array, 'data' => array]`.
 - `fst_session_set`, `fst_session_get`, `fst_flash_set`, `fst_flash_get`: Manajemen Session dan Flash messages.
 - `fst_dump(...)`, `fst_dd(...)`: Fungsi debugging mirip *dump and die* di Laravel (Hanya berjalan di environment `development`).
 

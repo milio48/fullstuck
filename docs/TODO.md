@@ -13,8 +13,8 @@ Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fu
 ## 2. Fitur Baru (Tambahan)
 - [x] **Middleware System**:
   Selesai! Telah ditambahkan sebagai parameter opsional ketiga/keempat pada `fst_get()`, `fst_group()`, dll. Jika middleware me-*return* `false`, proses *routing* akan terhenti.
-- [ ] **Request Validator**:
-  Fungsi validasi sederhana bawaan `fst_validate($rules)` untuk menyaring input `$_POST/$_GET` (misal: `required`, `email`, `min:5`).
+- [x] **Request Validator**:
+  Selesai! Helper bawaan `fst_validate($data, $rules)` untuk menyaring input `$_POST/$_GET` (misal: `required`, `email`, `min:5`).
 - [ ] **Basic Query Builder**:
   Meskipun `fst_db()` sudah praktis, bisa ditingkatkan dengan fungsi Query builder super ringan, contoh: `fst_db_insert('users', ['name'=>'Budi'])` atau `fst_db_select('users', ['id' => 1])`.
 
@@ -30,5 +30,4 @@ Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fu
 
 ---
 ## Prioritas Eksekusi
-1. Fungsi Request Validator (`fst_validate`).
-2. Basic Query Builder.
+1. Basic Query Builder.
