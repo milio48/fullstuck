@@ -859,6 +859,7 @@ if (fst_is_dev()) {
     }
 
     function fst_admin_show_login() {
+        header('Content-Type: text/html; charset=UTF-8');
         global $fst_config;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $error = fst_flash_get('error_message');
@@ -900,6 +901,7 @@ HTML;
     }
     
     function fst_admin_render_page($title, $content) {
+         header('Content-Type: text/html; charset=UTF-8');
          global $fst_config;
          $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
          $success_msg = fst_flash_get('success_message');
