@@ -6,6 +6,7 @@ Format berdasarkan prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.
 ## [Unreleased]
 
 ### Added
+- **JSON Body Auto-Parsing**: `fst_request()` dan `fst_input()` kini otomatis mendeteksi dan mem-parse `application/json` body dari `php://input`. Didukung oleh fungsi internal `_fst_parsed_body()` dengan *static cache* agar stream hanya dibaca sekali per request. Menghilangkan kebutuhan boilerplate `json_decode(file_get_contents('php://input'))` di sisi project.
 - **Basic Query Builder**: Menambahkan fungsi utilitas ringan `fst_db_select`, `fst_db_insert`, `fst_db_update`, dan `fst_db_delete` untuk mempermudah operasi CRUD tanpa harus menulis sintaks SQL secara manual berulang-ulang, lengkap dengan implementasi *Prepared Statements* otomatis di balik layar.
 - **Request Validator (`fst_validate`)**: Fungsi utility untuk memvalidasi dan membersihkan data array seperti `$_POST` atau `$_GET`. Mendukung rule seperti `required`, `email`, `min:X`, `max:X`, `numeric`, dan `in:X,Y,Z`. Mengembalikan data yang sudah disanitasi dengan `trim()`.
 - **Beautiful Error Handling UI**: Menambahkan UI yang informatif dan bergaya *Whoops* saat terjadi Exception atau Fatal Error di environment `development`. UI menampilkan *class name*, pesan error, letak file, dan *code snippet* (preview kode di sekitarnya). Saat di `production`, detail error akan disembunyikan dan hanya dicatat di server log untuk keamanan.
@@ -15,6 +16,7 @@ Format berdasarkan prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.
 - **System Map & Documentation**: Menambahkan folder `docs/` yang berisi `SYSTEM_MAP.md`, `ARCHITECTURE.md`, `DEVELOPMENT_FLOW.md`, `USING-FULLSTUCK.md`, dan perbaikan referensi API di `DOCUMENTATION.md`.
 
 ### Changed
+- **Deteksi Root Project Dinamis (`FST_ROOT_DIR`)**: Konstanta `FST_ROOT_DIR` kini ditentukan secara dinamis berdasarkan SAPI environment (`cli-server` → `$_SERVER['DOCUMENT_ROOT']`, `cli` → `getcwd()`, web server → `__DIR__`). Ini memperbaiki bug kritis di mana framework tidak bisa menemukan `fullstuck.json` saat dipanggil dari luar direktori project (contoh: `php -S localhost:8000 ../../fullstuck.php`). Pengguna juga dapat men-*define* `FST_ROOT_DIR` sendiri sebelum *include* untuk skenario lanjutan.
 - **Refactor `fst_run()`**: Kode pemrosesan rute yang panjang telah dipecah menjadi kumpulan *private helper* (`_fst_get_request_paths`, `_fst_serve_static_asset`, `_fst_match_static_routes`, `_fst_match_dynamic_routes`) untuk meningkatkan keterbacaan (*readability*) dan kemudahan *maintenance*.
 - Refactor pemisahan komponen `fullstuck.php` yang tadinya menjadi 1 file raksasa ke sub-modul: `core.php`, `database.php`, `router.php`, `http.php`, `view.php`, `utility.php`, `install.php`, `admin.php`, dan `bootstrap.php`.
 - Logika fungsi-fungsi admin / *dashboard* telah dipisahkan secara rahasia ke dalam `src/admin.php` di dalam Dunia 1.

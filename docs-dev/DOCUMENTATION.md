@@ -8,7 +8,8 @@ Ketika sebuah request masuk (biasanya diteruskan melalui `.htaccess` ke `fullstu
 
 1. **Bootstrapping & Check Install**: 
    - Framework memulai `session_start()`.
-   - Mengecek apakah file `fullstuck.json` ada. Jika **TIDAK**, halaman instalasi GUI akan muncul (`fst_handle_installation()`) untuk men-generate config dan `.htaccess`.
+   - Mendeteksi `FST_ROOT_DIR` secara dinamis: jika dijalankan via `php -S` (cli-server), menggunakan `$_SERVER['DOCUMENT_ROOT']`; jika via CLI, menggunakan `getcwd()`; jika di web server biasa (Apache/Nginx), fallback ke `__DIR__`. Pengguna juga bisa men-*define* `FST_ROOT_DIR` sebelum *include* untuk kontrol penuh.
+   - Mengecek apakah file `fullstuck.json` ada di `FST_ROOT_DIR`. Jika **TIDAK**, halaman instalasi GUI akan muncul (`fst_handle_installation()`) untuk men-generate config dan `.htaccess`.
 2. **Load Configuration**: 
    - Membaca dan men-decode file `fullstuck.json` ke dalam variabel global `$fst_config`.
    - Mengatur `error_reporting` berdasarkan status *environment* (development/production).
@@ -38,8 +39,8 @@ Ketika sebuah request masuk (biasanya diteruskan melalui `.htaccess` ke `fullstu
 ### Request & HTTP
 - `fst_uri()`: Mengembalikan URI request saat ini (sudah dikurangi base path).
 - `fst_method()`: Mengembalikan HTTP Method (`GET`, `POST`, dll).
-- `fst_input($key, $default)`: Mengambil nilai dari `$_POST` atau `$_GET`.
-- `fst_request()`: Menggabungkan `$_GET` dan `$_POST`.
+- `fst_input($key, $default)`: Mengambil nilai dari request data (gabungan `$_GET`, `$_POST`, dan JSON body jika ada).
+- `fst_request()`: Mengembalikan seluruh data request. Otomatis mendeteksi dan mem-parse JSON body dari `php://input` jika `$_POST` kosong (berguna untuk `PUT`, `PATCH`, dan `POST` dengan `Content-Type: application/json`). Data di-cache secara internal agar aman dipanggil berkali-kali.
 - `fst_file($key)`: Mengambil file aman dari `$_FILES`.
 
 ### Response & View
