@@ -15,6 +15,6 @@ Sebuah cita-cita framework untuk semua project yang mengedepankan filosofi *sing
 
 ## Pengembangan (Framework Developers & AI Agents)
 Project ini menggunakan arsitektur **Dua Dunia**. Kami mengembangkannya secara modular di folder `src/`, lalu meng-compile-nya menjadi 1 file rilis.
-- 🤖 **Bagi AI Agents / Contributor Baru:** Harap membaca [docs/SYSTEM_MAP.md](docs/SYSTEM_MAP.md) terlebih dahulu untuk memuat (*load*) konteks sistem proyek ini secara aman.
-- **Dokumentasi API:** [docs/DOCUMENTATION.md](docs/DOCUMENTATION.md)
-- **Arsitektur Build:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- 🤖 **Bagi AI Agents / Contributor Baru:** Harap membaca [docs-dev/SYSTEM_MAP.md](docs-dev/SYSTEM_MAP.md) terlebih dahulu untuk memuat (*load*) konteks sistem proyek ini secara aman.
+- **Dokumentasi API:** [docs-dev/DOCUMENTATION.md](docs-dev/DOCUMENTATION.md)
+- **Arsitektur Build:** [docs-dev/ARCHITECTURE.md](docs-dev/ARCHITECTURE.md)

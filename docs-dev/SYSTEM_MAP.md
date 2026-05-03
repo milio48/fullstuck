@@ -14,7 +14,7 @@
 ├── fullstuck.php               # [DUNIA 2] Framework rilis single-file. (JANGAN DIEDIT MANUAL!)
 ├── fullstuck.json              # File konfigurasi yang otomatis terbuat saat GUI Setup Wizard berjalan.
 ├── README.md                   # Pengenalan publik repository.
-├── docs/                       # Direktori Dokumentasi & Konteks (Anda ada di sini)
+├── docs-dev/                   # Direktori Dokumentasi & Konteks (Anda ada di sini)
 │   ├── SYSTEM_MAP.md           # Peta sistem untuk AI / Developer baru.
 │   ├── ARCHITECTURE.md         # Aturan main arsitektur "Dua Dunia" & compiler.
 │   ├── DEVELOPMENT_FLOW.md     # SOP / Aturan pengembangan Dunia 1 (Git, Test, & Report).
@@ -22,6 +22,7 @@
 │   ├── USING-FULLSTUCK.md      # Panduan setup & eksekusi framework untuk pengguna.
 │   ├── DOCUMENTATION.md        # Penjelasan flow dan daftar lengkap fungsi helper fst_*.
 │   └── TODO.md                 # Rencana refactoring dan fitur baru.
+├── docs/                       # Dokumentasi publik/end-user (Source untuk GitHub Pages).
 └── src/                        # [DUNIA 1] Source code framework modular (EDIT KODE DI SINI)
     ├── compiler-fullstuck.php  # Script builder (Satukan src/ menjadi fullstuck.php)
     ├── core.php                # Konstanta dasar, inisialisasi & error reporting
