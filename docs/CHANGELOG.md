@@ -11,6 +11,8 @@ Format berdasarkan prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.
 - **System Map & Documentation**: Menambahkan folder `docs/` yang berisi `SYSTEM_MAP.md`, `ARCHITECTURE.md`, `DEVELOPMENT_FLOW.md`, `USING-FULLSTUCK.md`, dan perbaikan referensi API di `DOCUMENTATION.md`.
 
 ### Changed
+- **Refactor `fst_run()`**: Kode pemrosesan rute yang panjang telah dipecah menjadi kumpulan *private helper* (`_fst_get_request_paths`, `_fst_serve_static_asset`, `_fst_match_static_routes`, `_fst_match_dynamic_routes`) untuk meningkatkan keterbacaan (*readability*) dan kemudahan *maintenance*.
+- Refactor pemisahan komponen `fullstuck.php` yang tadinya menjadi 1 file raksasa ke sub-modul: `core.php`, `database.php`, `router.php`, `http.php`, `view.php`, `utility.php`, `install.php`, `admin.php`, dan `bootstrap.php`.
 - Logika fungsi-fungsi admin / *dashboard* telah dipisahkan secara rahasia ke dalam `src/admin.php` di dalam Dunia 1.
 
 ### Removed

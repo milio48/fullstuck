@@ -7,8 +7,8 @@ Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fu
   Selesai! Menggunakan folder `src/` dan `compiler-fullstuck.php`.
 - [x] **Pemisahan Admin Panel**: 
   Selesai! Dipindahkan ke `src/admin.php`.
-- [ ] **Perampingan fungsi `fst_run()`**:
-  Fungsi dispatch router cukup kompleks. Di dalam Dunia 1 (`src/router.php`), kita bisa memisahkannya menjadi sub-fungsi `fst_serve_static()`, `fst_match_static_routes()`, dan `fst_match_dynamic_routes()`. Saat dicompile, kode ini akan tersusun rapi.
+- [x] **Perampingan fungsi `fst_run()`**:
+  Fungsi dispatch router telah dipisah ke dalam private helpers seperti `_fst_serve_static_asset()`, `_fst_match_static_routes()`, dan `_fst_match_dynamic_routes()` sehingga mudah dibaca.
 
 ## 2. Fitur Baru (Tambahan)
 - [ ] **Middleware System**:
@@ -30,6 +30,5 @@ Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fu
 
 ---
 ## Prioritas Eksekusi
-1. Refactor `fst_run()` agar strukturnya lebih mudah dibaca (Modularisasi router).
-2. Tambahkan sistem Middleware sederhana.
-3. Rancang UI Error Handling yang informatif.
+1. Tambahkan sistem Middleware sederhana.
+2. Rancang UI Error Handling yang informatif.

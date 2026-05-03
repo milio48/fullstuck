@@ -79,90 +79,152 @@ function fst_group($prefix, $callback) {
     $fst_route_prefix = $parent_prefix;
 }
 
-function fst_run() {
-    global $fst_routes, $fst_route_found, $fst_config;
-    
-    $uri = fst_uri();
-    $method = fst_method();
-    
+function _fst_get_request_paths() {
+    global $fst_config;
     $request_uri_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
     $base_path_config = $fst_config['routing']['base_path'] ?? '/';
     if ($base_path_config !== '/' && str_starts_with($request_uri_path, $base_path_config)) {
         $request_uri_path = substr($request_uri_path, strlen($base_path_config));
     }
     if (!str_starts_with($request_uri_path, '/')) $request_uri_path = '/' . $request_uri_path;
-
     $absolute_path = FST_ROOT_DIR . $request_uri_path;
+    
+    return [
+        'uri_path' => $request_uri_path,
+        'absolute_path' => $absolute_path
+    ];
+}
 
+function _fst_is_protected_file($absolute_path) {
+    // Protect core framework file and configuration file
     $normalized_abs_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $absolute_path);
-    $normalized_file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, __FILE__);
+    $normalized_file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, FST_ROOT_DIR . '/fullstuck.php');
     $normalized_config_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, FST_CONFIG_FILE);
 
-    if ($normalized_abs_path === $normalized_file_path || $normalized_abs_path === $normalized_config_path) {
-        fst_abort(404);
-        return;
-    }
+    return ($normalized_abs_path === $normalized_file_path || $normalized_abs_path === $normalized_config_path);
+}
 
-    // Prioritas #1: Cek Aset Statis (public_folders)
+function _fst_serve_static_asset($request_uri_path, $absolute_path) {
+    global $fst_config;
     $public_folders = $fst_config['routing']['public_folders'] ?? [];
     foreach ($public_folders as $folder) {
         $clean_folder = trim($folder, '/');
         if (str_starts_with(ltrim($request_uri_path, '/'), $clean_folder . '/')) {
             if (is_file($absolute_path)) {
-                fst_serve_static_file($absolute_path); die();
+                fst_serve_static_file($absolute_path); 
+                die(); // Halt execution after serving static file
             }
-            break;
+            break; // Stop checking other public folders if prefix matches but file doesn't exist
         }
     }
+    return false;
+}
+
+function _fst_match_static_routes() {
+    global $fst_routes, $fst_route_found;
+    $uri = fst_uri();
+    $method = fst_method();
     
-    // Prioritas #2: Cek Rute Terdaftar (Admin, API, dll) SELALU
     foreach ($fst_routes as $route) {
         list($route_method, $pattern, $callback) = $route;
         if ($route_method !== 'ANY' && $route_method !== $method) continue;
+        
         if (preg_match($pattern, $uri, $matches)) {
-            array_shift($matches);
+            array_shift($matches); // Remove the full match string
             call_user_func_array($callback, $matches);
-            $fst_route_found = true; return; 
+            $fst_route_found = true; 
+            return true; 
         }
     }
+    return false;
+}
+
+function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
+    global $fst_config, $fst_route_found;
     
     $routing_mode = $fst_config['routing']['mode'] ?? 'static';
     $allow_dynamic_fallback = $fst_config['routing']['static_config']['dynamic_fallback'] ?? false;
 
     if ($routing_mode === 'static' && !$allow_dynamic_fallback) {
+        return false;
+    }
+
+    $dynamic_config = $fst_config['routing']['dynamic_config'] ?? [];
+    $allowed_exec_exts = $dynamic_config['whitelist_filetype'] ?? ['php'];
+    $index_files = $dynamic_config['index_files'] ?? ['index.php', 'index.html'];
+    $directory_listing = $dynamic_config['directory_listing'] ?? false;
+
+    if (is_file($absolute_path)) {
+        $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));
+        if (in_array($ext, $allowed_exec_exts)) { 
+            fst_serve_dynamic_file($absolute_path); 
+            $fst_route_found = true; 
+            return true; 
+        } else { 
+            fst_serve_static_file($absolute_path); 
+            $fst_route_found = true; 
+            return true; 
+        }
+    }
+    elseif (is_dir($absolute_path)) {
+        if (str_ends_with($request_uri_path, '/')) {
+            foreach ($index_files as $index_file) {
+                $file_to_check = rtrim($absolute_path, '/') . '/' . $index_file;
+                if (is_file($file_to_check)) { 
+                    fst_serve_dynamic_file($file_to_check); 
+                    $fst_route_found = true; 
+                    return true; 
+                }
+            }
+            if ($directory_listing) { 
+                $relative_path_for_listing = trim($request_uri_path, '/'); 
+                fst_show_directory_listing($absolute_path, $relative_path_for_listing); 
+                $fst_route_found = true; 
+                return true; 
+            }
+        } else { 
+            fst_redirect($request_uri_path . '/', 301); 
+            return true;
+        }
+    }
+    elseif (!str_contains(basename($request_uri_path), '.')) {
+        foreach ($allowed_exec_exts as $ext) {
+            $file_to_check = $absolute_path . '.' . $ext;
+            if (is_file($file_to_check)) { 
+                fst_serve_dynamic_file($file_to_check); 
+                $fst_route_found = true; 
+                return true; 
+            }
+        }
+    }
+    
+    return false;
+}
+
+function fst_run() {
+    global $fst_route_found;
+    
+    // 1. Ambil path dan URI yang sudah dibersihkan
+    $req = _fst_get_request_paths(); 
+    
+    // 2. Keamanan: Cegah akses file krusial (fullstuck.php, config)
+    if (_fst_is_protected_file($req['absolute_path'])) {
         fst_abort(404);
         return;
     }
 
-    // Prioritas #3: Cek Filesystem
-    if ($routing_mode === 'dynamic' || ($routing_mode === 'static' && $allow_dynamic_fallback)) {
-        $dynamic_config = $fst_config['routing']['dynamic_config'] ?? [];
-        $allowed_exec_exts = $dynamic_config['whitelist_filetype'] ?? ['php'];
-        $index_files = $dynamic_config['index_files'] ?? ['index.php', 'index.html'];
-        $directory_listing = $dynamic_config['directory_listing'] ?? false;
+    // 3. Prioritas #1: Serve Static Asset (gambar, css, js)
+    if (_fst_serve_static_asset($req['uri_path'], $req['absolute_path'])) return;
+    
+    // 4. Prioritas #2: Static Routing (Whitelist route & Admin)
+    if (_fst_match_static_routes()) return;
+    
+    // 5. Prioritas #3: Dynamic Routing (Fallback ke direktori)
+    if (_fst_match_dynamic_routes($req['uri_path'], $req['absolute_path'])) return;
 
-        if (is_file($absolute_path)) {
-            $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));
-            if (in_array($ext, $allowed_exec_exts)) { fst_serve_dynamic_file($absolute_path); $fst_route_found = true; return; }
-            else { fst_serve_static_file($absolute_path); $fst_route_found = true; return; }
-        }
-        elseif (is_dir($absolute_path)) {
-            if (str_ends_with($request_uri_path, '/')) {
-                foreach ($index_files as $index_file) {
-                    $file_to_check = rtrim($absolute_path, '/') . '/' . $index_file;
-                    if (is_file($file_to_check)) { fst_serve_dynamic_file($file_to_check); $fst_route_found = true; return; }
-                }
-                if ($directory_listing) { $relative_path_for_listing = trim($request_uri_path, '/'); fst_show_directory_listing($absolute_path, $relative_path_for_listing); $fst_route_found = true; return; }
-            } else { fst_redirect($request_uri_path . '/', 301); }
-        }
-        elseif (!str_contains(basename($request_uri_path), '.')) {
-            foreach ($allowed_exec_exts as $ext) {
-                $file_to_check = $absolute_path . '.' . $ext;
-                if (is_file($file_to_check)) { fst_serve_dynamic_file($file_to_check); $fst_route_found = true; return; }
-            }
-        }
+    // 6. Jika semua gagal, berikan 404
+    if (!$fst_route_found) {
+        fst_abort(404);
     }
-
-    if (!$fst_route_found) fst_abort(404);
 }
 ?>
