@@ -1,0 +1,35 @@
+# FullStuck.php TODO & Refactoring Plan
+
+Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fullstuck.php`. Framework ini memiliki visi meminimalisir dependensi, namun ada beberapa aspek yang bisa dioptimalkan agar lebih elegan dan aman.
+
+## 1. Arsitektur "Dua Dunia" & Refactoring
+- [x] **Pemisahan Mode Development (Modular) vs Release (Single-File)**: 
+  Selesai! Menggunakan folder `src/` dan `compiler-fullstuck.php`.
+- [x] **Pemisahan Admin Panel**: 
+  Selesai! Dipindahkan ke `src/admin.php`.
+- [ ] **Perampingan fungsi `fst_run()`**:
+  Fungsi dispatch router cukup kompleks. Di dalam Dunia 1 (`src/router.php`), kita bisa memisahkannya menjadi sub-fungsi `fst_serve_static()`, `fst_match_static_routes()`, dan `fst_match_dynamic_routes()`. Saat dicompile, kode ini akan tersusun rapi.
+
+## 2. Fitur Baru (Tambahan)
+- [ ] **Middleware System**:
+  Tambahkan opsi parameter ketiga/keempat pada `fst_get()` dan `fst_post()` untuk mendukung Middleware / Before Route filter (contoh: Pengecekan auth user sebelum masuk *controller*/callback).
+- [ ] **Request Validator**:
+  Fungsi validasi sederhana bawaan `fst_validate($rules)` untuk menyaring input `$_POST/$_GET` (misal: `required`, `email`, `min:5`).
+- [ ] **Basic Query Builder**:
+  Meskipun `fst_db()` sudah praktis, bisa ditingkatkan dengan fungsi Query builder super ringan, contoh: `fst_db_insert('users', ['name'=>'Budi'])` atau `fst_db_select('users', ['id' => 1])`.
+
+## 3. Peningkatan Keamanan & Handling Error
+- [ ] **Exception / Error Handler**:
+  Tangkap semua *throw exception* dan *fatal error* di level atas menggunakan `set_exception_handler` dan `set_error_handler`, lalu arahkan ke tampilan UI error page yang informatif mirip *Whoops* (di mode dev) atau log ke file (di mode prod).
+- [ ] **Strict Typing & Sanitization**:
+  Tambahkan pembersihan default (XSS prevention helper) misalnya `fst_escape()` untuk mencetak data HTML aman di view.
+
+## 4. UI/UX Dashboard
+- [ ] Poles UI Dashboard instalasi dan Monitor agar terlihat lebih modern.
+- [ ] Tambahkan tombol *Clear Cache* (jika kelak mengimplementasikan cache router).
+
+---
+## Prioritas Eksekusi
+1. Refactor `fst_run()` agar strukturnya lebih mudah dibaca (Modularisasi router).
+2. Tambahkan sistem Middleware sederhana.
+3. Rancang UI Error Handling yang informatif.
