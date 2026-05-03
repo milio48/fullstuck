@@ -11,8 +11,8 @@ Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fu
   Fungsi dispatch router telah dipisah ke dalam private helpers seperti `_fst_serve_static_asset()`, `_fst_match_static_routes()`, dan `_fst_match_dynamic_routes()` sehingga mudah dibaca.
 
 ## 2. Fitur Baru (Tambahan)
-- [ ] **Middleware System**:
-  Tambahkan opsi parameter ketiga/keempat pada `fst_get()` dan `fst_post()` untuk mendukung Middleware / Before Route filter (contoh: Pengecekan auth user sebelum masuk *controller*/callback).
+- [x] **Middleware System**:
+  Selesai! Telah ditambahkan sebagai parameter opsional ketiga/keempat pada `fst_get()`, `fst_group()`, dll. Jika middleware me-*return* `false`, proses *routing* akan terhenti.
 - [ ] **Request Validator**:
   Fungsi validasi sederhana bawaan `fst_validate($rules)` untuk menyaring input `$_POST/$_GET` (misal: `required`, `email`, `min:5`).
 - [ ] **Basic Query Builder**:
@@ -30,5 +30,5 @@ Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fu
 
 ---
 ## Prioritas Eksekusi
-1. Tambahkan sistem Middleware sederhana.
-2. Rancang UI Error Handling yang informatif.
+1. Rancang UI Error Handling yang informatif (menangkap semua Fatal Error / Exception).
+2. Fungsi Request Validator (`fst_validate`).

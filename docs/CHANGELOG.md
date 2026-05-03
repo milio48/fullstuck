@@ -6,6 +6,7 @@ Format berdasarkan prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.
 ## [Unreleased]
 
 ### Added
+- **Middleware System**: Menambahkan dukungan *middleware* (mendukung fungsi tunggal atau *array*) melalui parameter opsional pada helper routing seperti `fst_get()`, `fst_post()`, dan `fst_group()`. Eksekusi routing akan terhenti jika middleware me-return `false`.
 - **Arsitektur "Dua Dunia"**: Menambahkan alur pengembangan framework baru berbasis folder `src/`. Source code dipisah menjadi banyak sub-modul agar mudah di-maintain.
 - **Compiler Script**: Menambahkan `src/compiler-fullstuck.php` untuk mem-*build* file modular kembali menjadi satu rilis utuh `fullstuck.php`.
 - **System Map & Documentation**: Menambahkan folder `docs/` yang berisi `SYSTEM_MAP.md`, `ARCHITECTURE.md`, `DEVELOPMENT_FLOW.md`, `USING-FULLSTUCK.md`, dan perbaikan referensi API di `DOCUMENTATION.md`.

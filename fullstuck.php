@@ -121,8 +121,8 @@ HTML;
     echo $html; die();
 }
 
-function fst_route($method, $path, $callback) {
-    global $fst_routes, $fst_route_prefix, $fst_config;
+function fst_route($method, $path, $callback, $middleware = []) {
+    global $fst_routes, $fst_route_prefix, $fst_group_middleware, $fst_config;
     
     $full_original_path = $fst_route_prefix . $path;
     if ($full_original_path !== '/' && str_ends_with($full_original_path, '/')) {
@@ -158,21 +158,33 @@ function fst_route($method, $path, $callback) {
 
     $final_pattern = '#^' . str_replace('/', '\/', $final_pattern) . '$#';
 
-    $fst_routes[] = [$method, $final_pattern, $callback, $full_original_path];
+    if (!is_array($middleware)) $middleware = [$middleware];
+    $combined_middleware = array_merge($fst_group_middleware ?? [], $middleware);
+
+    $fst_routes[] = [$method, $final_pattern, $callback, $full_original_path, $combined_middleware];
 }
 
-function fst_get($path, $callback) { fst_route('GET', $path, $callback); }
-function fst_post($path, $callback) { fst_route('POST', $path, $callback); }
-function fst_put($path, $callback) { fst_route('PUT', $path, $callback); }
-function fst_patch($path, $callback) { fst_route('PATCH', $path, $callback); }
-function fst_delete($path, $callback) { fst_route('DELETE', $path, $callback); }
-function fst_any($path, $callback) { fst_route('ANY', $path, $callback); }
-function fst_group($prefix, $callback) {
-    global $fst_route_prefix;
+function fst_get($path, $callback, $middleware = []) { fst_route('GET', $path, $callback, $middleware); }
+function fst_post($path, $callback, $middleware = []) { fst_route('POST', $path, $callback, $middleware); }
+function fst_put($path, $callback, $middleware = []) { fst_route('PUT', $path, $callback, $middleware); }
+function fst_patch($path, $callback, $middleware = []) { fst_route('PATCH', $path, $callback, $middleware); }
+function fst_delete($path, $callback, $middleware = []) { fst_route('DELETE', $path, $callback, $middleware); }
+function fst_any($path, $callback, $middleware = []) { fst_route('ANY', $path, $callback, $middleware); }
+
+function fst_group($prefix, $callback, $middleware = []) {
+    global $fst_route_prefix, $fst_group_middleware;
     $parent_prefix = $fst_route_prefix;
+    $parent_middleware = $fst_group_middleware ?? [];
+    
     $fst_route_prefix = rtrim($parent_prefix, '/') . '/' . trim($prefix, '/');
+    
+    if (!is_array($middleware)) $middleware = [$middleware];
+    $fst_group_middleware = array_merge($parent_middleware, $middleware);
+    
     call_user_func($callback);
+    
     $fst_route_prefix = $parent_prefix;
+    $fst_group_middleware = $parent_middleware;
 }
 
 function _fst_get_request_paths() {
@@ -227,6 +239,20 @@ function _fst_match_static_routes() {
         
         if (preg_match($pattern, $uri, $matches)) {
             array_shift($matches); // Remove the full match string
+            
+            // Execute Middleware
+            $middleware_list = $route[4] ?? [];
+            foreach ($middleware_list as $mw) {
+                if (is_callable($mw)) {
+                    $result = call_user_func($mw);
+                    // If middleware returns false, halt the route callback execution
+                    if ($result === false) {
+                        $fst_route_found = true; 
+                        return true; 
+                    }
+                }
+            }
+
             call_user_func_array($callback, $matches);
             $fst_route_found = true; 
             return true; 

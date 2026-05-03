@@ -32,8 +32,8 @@ Ketika sebuah request masuk (biasanya diteruskan melalui `.htaccess` ke `fullstu
 ## 2. Fitur & Fungsi Helper (API Reference)
 
 ### Routing
-- `fst_get($path, $callback)`, `fst_post()`, `fst_put()`, `fst_patch()`, `fst_delete()`, `fst_any()`: Mendaftarkan rute. Mendukung parameter regex seperti `{id:i}`, `{slug:s}`, `{name:a}`.
-- `fst_group($prefix, $callback)`: Mengelompokkan rute dengan prefix tertentu (contoh: `/api/v1`).
+- `fst_get($path, $callback, $middleware = [])`, `fst_post()`, `fst_put()`, `fst_patch()`, `fst_delete()`, `fst_any()`: Mendaftarkan rute. Mendukung parameter regex seperti `{id:i}`, `{slug:s}`, `{name:a}`. Parameter ketiga `middleware` bersifat opsional (mendukung *string callback* atau array). Jika middleware me-*return* `false`, eksekusi *callback* utama akan dihentikan.
+- `fst_group($prefix, $callback, $middleware = [])`: Mengelompokkan rute dengan prefix tertentu (contoh: `/api/v1`). Mendukung pelekatan *middleware* yang akan berlaku untuk semua rute di dalam grup tersebut.
 
 ### Request & HTTP
 - `fst_uri()`: Mengembalikan URI request saat ini (sudah dikurangi base path).
