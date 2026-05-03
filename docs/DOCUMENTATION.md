@@ -52,7 +52,11 @@ Ketika sebuah request masuk (biasanya diteruskan melalui `.htaccess` ke `fullstu
 
 ### Database
 - `fst_db($mode, $sql, $params = [])`: Fungsi utilitas DB via PDO. 
-  - `mode` bisa bernilai: `'EXEC'` (untuk Insert/Update/Delete, mengembalikan array), `'ROW'` (1 baris data), `'ALL'` (banyak baris), `'SCALAR'` (1 kolom saja).
+  - `mode` bisa bernilai: `'EXEC'` (untuk Insert/Update/Delete, mengembalikan array info eksekusi), `'ROW'` (1 baris data), `'ALL'` (banyak baris), `'SCALAR'` (1 kolom saja).
+- `fst_db_select($table, $conditions = [], $options = [])`: Query Builder untuk SELECT. Parameter `$options` mendukung `'select'`, `'order_by'`, `'limit'`, `'offset'`, `'mode'`.
+- `fst_db_insert($table, $data)`: Query Builder untuk INSERT. Array associative `$data` berupa kolom => nilai.
+- `fst_db_update($table, $data, $conditions = [])`: Query Builder untuk UPDATE. 
+- `fst_db_delete($table, $conditions)`: Query Builder untuk DELETE. Jika array `$conditions` kosong, fungsi akan menolak operasi (demi keamanan dari delete massal tanpa Where).
 
 ### Security
 - `fst_csrf_token()`: Menghasilkan (atau mengambil) token CSRF sesi aktif.

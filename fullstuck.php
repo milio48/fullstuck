@@ -179,6 +179,67 @@ function fst_db($mode, $sql, $params = []) {
     return match(strtoupper($mode)) { 'ROW' => $stmt->fetch(), 'SCALAR' => $stmt->fetchColumn(), 'ALL' => $stmt->fetchAll(), default => $stmt->fetchAll() };
 }
 
+function fst_db_select($table, $conditions = [], $options = []) {
+    $columns = $options['select'] ?? '*';
+    $sql = "SELECT {$columns} FROM `{$table}`";
+    $params = [];
+    if (!empty($conditions)) {
+        $where = [];
+        foreach ($conditions as $k => $v) {
+            $where[] = "`{$k}` = ?";
+            $params[] = $v;
+        }
+        $sql .= " WHERE " . implode(" AND ", $where);
+    }
+    if (isset($options['order_by'])) $sql .= " ORDER BY " . $options['order_by'];
+    if (isset($options['limit'])) $sql .= " LIMIT " . (int)$options['limit'];
+    if (isset($options['offset'])) $sql .= " OFFSET " . (int)$options['offset'];
+    
+    $mode = $options['mode'] ?? 'ALL';
+    return fst_db($mode, $sql, $params);
+}
+
+function fst_db_insert($table, $data) {
+    if (empty($data)) return false;
+    $columns = array_keys($data);
+    $placeholders = array_fill(0, count($data), '?');
+    $sql = "INSERT INTO `{$table}` (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $placeholders) . ")";
+    return fst_db('EXEC', $sql, array_values($data));
+}
+
+function fst_db_update($table, $data, $conditions = []) {
+    if (empty($data)) return false;
+    $set = [];
+    $params = [];
+    foreach ($data as $k => $v) {
+        $set[] = "`{$k}` = ?";
+        $params[] = $v;
+    }
+    $sql = "UPDATE `{$table}` SET " . implode(", ", $set);
+    
+    if (!empty($conditions)) {
+        $where = [];
+        foreach ($conditions as $k => $v) {
+            $where[] = "`{$k}` = ?";
+            $params[] = $v;
+        }
+        $sql .= " WHERE " . implode(" AND ", $where);
+    }
+    return fst_db('EXEC', $sql, $params);
+}
+
+function fst_db_delete($table, $conditions) {
+    if (empty($conditions)) return false; // Prevent accidental full table delete
+    $where = [];
+    $params = [];
+    foreach ($conditions as $k => $v) {
+        $where[] = "`{$k}` = ?";
+        $params[] = $v;
+    }
+    $sql = "DELETE FROM `{$table}` WHERE " . implode(" AND ", $where);
+    return fst_db('EXEC', $sql, $params);
+}
+
 // ==========================================
 // FILE: router.php
 // ==========================================
