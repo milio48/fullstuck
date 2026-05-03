@@ -30,5 +30,5 @@ Berikut adalah daftar rencana perbaikan dan pengembangan (refactoring) untuk `fu
 
 ---
 ## Prioritas Eksekusi
-1. Rancang UI Error Handling yang informatif (menangkap semua Fatal Error / Exception).
-2. Fungsi Request Validator (`fst_validate`).
+1. Fungsi Request Validator (`fst_validate`).
+2. Basic Query Builder.

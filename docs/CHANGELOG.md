@@ -6,6 +6,7 @@ Format berdasarkan prinsip [Keep a Changelog](https://keepachangelog.com/en/1.0.
 ## [Unreleased]
 
 ### Added
+- **Beautiful Error Handling UI**: Menambahkan UI yang informatif dan bergaya *Whoops* saat terjadi Exception atau Fatal Error di environment `development`. UI menampilkan *class name*, pesan error, letak file, dan *code snippet* (preview kode di sekitarnya). Saat di `production`, detail error akan disembunyikan dan hanya dicatat di server log untuk keamanan.
 - **Middleware System**: Menambahkan dukungan *middleware* (mendukung fungsi tunggal atau *array*) melalui parameter opsional pada helper routing seperti `fst_get()`, `fst_post()`, dan `fst_group()`. Eksekusi routing akan terhenti jika middleware me-return `false`.
 - **Arsitektur "Dua Dunia"**: Menambahkan alur pengembangan framework baru berbasis folder `src/`. Source code dipisah menjadi banyak sub-modul agar mudah di-maintain.
 - **Compiler Script**: Menambahkan `src/compiler-fullstuck.php` untuk mem-*build* file modular kembali menjadi satu rilis utuh `fullstuck.php`.
