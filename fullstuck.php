@@ -5,8 +5,16 @@
 // FILE: core.php
 // ==========================================
 session_start();
-define('FST_ROOT_DIR', __DIR__);
-define('FST_CONFIG_FILE', FST_ROOT_DIR . '/fullstuck.json');
+if (!defined('FST_ROOT_DIR')) {
+    $root = __DIR__;
+    if (php_sapi_name() === 'cli-server') {
+        $root = $_SERVER['DOCUMENT_ROOT'];
+    } elseif (php_sapi_name() === 'cli') {
+        $root = getcwd();
+    }
+    define('FST_ROOT_DIR', realpath($root) ?: $root);
+}
+define('FST_CONFIG_FILE', FST_ROOT_DIR . DIRECTORY_SEPARATOR . 'fullstuck.json');
 
 if (!file_exists(FST_CONFIG_FILE)) {
     fst_handle_installation();
