@@ -1241,7 +1241,7 @@ HTML;
 
         $function_groups = [
             'Core' => ['fst_abort', 'fst_run', 'fst_is_dev'],
-            'Database' => ['fst_db'],
+            'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
             'Views' => [
                 'fst_view',
                 'fst_partial',
@@ -1255,6 +1255,7 @@ HTML;
             'Session' => ['fst_session_set', 'fst_session_get', 'fst_session_forget', 'fst_flash_set', 'fst_flash_has', 'fst_flash_get'],
             'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check'],
             'Upload' => ['fst_upload'],
+            'Validation' => ['fst_validate'],
             'Debug' => ['fst_dump', 'fst_dd'],
             'Installation' => ['fst_handle_installation', 'fst_render_status_row', 'fst_show_install_success', 'fst_show_install_form'],
             'Admin' => [
