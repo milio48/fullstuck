@@ -209,6 +209,28 @@ HTML;
         $content .= "<p><strong>Routing Mode:</strong> " . htmlspecialchars($fst_config['routing']['mode']) . "</p>";
         $content .= "<p><strong>Database Status:</strong> {$db_status}</p>";
 
+        // Extension Health Check
+        $ext_checks = [
+            ['name' => 'mbstring', 'level' => 'recommended', 'note' => 'Digunakan untuk penghitungan panjang string multibyte (validasi). Tanpa ini, framework fallback ke strlen().'],
+            ['name' => 'fileinfo', 'level' => 'recommended', 'note' => 'Meningkatkan deteksi MIME type saat upload file.'],
+            ['name' => 'json', 'level' => 'required', 'note' => 'Diperlukan untuk parsing fullstuck.json dan fst_json().'],
+            ['name' => 'pdo', 'level' => 'required', 'note' => 'Diperlukan untuk koneksi database.'],
+            ['name' => 'session', 'level' => 'required', 'note' => 'Diperlukan untuk session, flash message, dan CSRF.'],
+        ];
+        $ext_html = "<h2>PHP Extension Check</h2><table><thead><tr><th>Extension</th><th>Status</th><th>Level</th><th>Keterangan</th></tr></thead><tbody>";
+        foreach ($ext_checks as $ext) {
+            $loaded = extension_loaded($ext['name']);
+            $status_icon = $loaded ? '<span style="color:green;">✔ Loaded</span>' : '<span style="color:orange;">✗ Not Loaded</span>';
+            $level_label = $ext['level'] === 'required' ? '<b>Required</b>' : 'Recommended';
+            if (!$loaded && $ext['level'] === 'recommended') {
+                $warnings[] = "Extension <code>{$ext['name']}</code> tidak aktif. {$ext['note']}";
+            } elseif (!$loaded && $ext['level'] === 'required') {
+                $errors[] = "Extension <code>{$ext['name']}</code> (REQUIRED) tidak aktif! {$ext['note']}";
+            }
+            $ext_html .= "<tr><td><code>{$ext['name']}</code></td><td>{$status_icon}</td><td>{$level_label}</td><td>{$ext['note']}</td></tr>";
+        }
+        $ext_html .= "</tbody></table>";
+
         if (!empty($errors)) {
             $content .= "<h2><span style='color:red;'>Errors Found!</span></h2><ul>";
             foreach($errors as $err) { $content .= "<li>{$err}</li>"; }
@@ -219,6 +241,8 @@ HTML;
             foreach($warnings as $warn) { $content .= "<li>{$warn}</li>"; }
             $content .= "</ul>";
         }
+
+        $content .= $ext_html;
 
         fst_admin_render_page('System Monitor', $content);
     }
@@ -303,7 +327,7 @@ HTML;
         fst_admin_render_page('Registered Routes', $content);
     }
      
-     function fst_get_server_info() { return [ 'PHP Version' => PHP_VERSION, 'System' => php_uname(), 'Server Software' => $_SERVER['SERVER_SOFTWARE'] ?? 'N/A', 'Document Root' => $_SERVER['DOCUMENT_ROOT'] ?? 'N/A', 'FullStuck Root' => FST_ROOT_DIR, 'PDO Loaded' => extension_loaded('pdo') ? 'Yes' : 'No', 'PDO MySQL' => extension_loaded('pdo_mysql') ? 'Yes' : 'No', 'PDO SQLite' => extension_loaded('pdo_sqlite') ? 'Yes' : 'No', ]; }
+     function fst_get_server_info() { return [ 'PHP Version' => PHP_VERSION, 'System' => php_uname(), 'Server Software' => $_SERVER['SERVER_SOFTWARE'] ?? 'N/A', 'Document Root' => $_SERVER['DOCUMENT_ROOT'] ?? 'N/A', 'FullStuck Root' => FST_ROOT_DIR, 'SAPI' => php_sapi_name(), 'PDO Loaded' => extension_loaded('pdo') ? 'Yes' : 'No', 'PDO MySQL' => extension_loaded('pdo_mysql') ? 'Yes' : 'No', 'PDO SQLite' => extension_loaded('pdo_sqlite') ? 'Yes' : 'No', 'mbstring' => extension_loaded('mbstring') ? 'Yes' : 'No (fallback to strlen)', 'json' => extension_loaded('json') ? 'Yes' : 'No', 'session' => extension_loaded('session') ? 'Yes' : 'No', 'fileinfo' => extension_loaded('fileinfo') ? 'Yes' : 'No (upload mime detection limited)', ]; }
      
      function fst_admin_show_server_info() {
          fst_admin_check_auth();

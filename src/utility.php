@@ -10,6 +10,11 @@ function fst_dump(...$vars) {
 }
 function fst_dd(...$vars) { fst_dump(...$vars); die(); }
 
+// Helper internal: fallback strlen jika mbstring tidak tersedia
+function _fst_strlen($str) {
+    return function_exists('mb_strlen') ? mb_strlen($str, 'UTF-8') : strlen($str);
+}
+
 function fst_validate($data, $rules) {
     $errors = [];
     $sanitized = [];
@@ -46,13 +51,13 @@ function fst_validate($data, $rules) {
                 }
             } elseif ($rule_name === 'min') {
                 $min = (int)($params[0] ?? 0);
-                if (mb_strlen((string)$value) < $min) {
+                if (_fst_strlen((string)$value) < $min) {
                     $errors[$field][] = "Bidang '{$field}' minimal {$min} karakter.";
                     $field_valid = false;
                 }
             } elseif ($rule_name === 'max') {
                 $max = (int)($params[0] ?? 0);
-                if (mb_strlen((string)$value) > $max) {
+                if (_fst_strlen((string)$value) > $max) {
                     $errors[$field][] = "Bidang '{$field}' maksimal {$max} karakter.";
                     $field_valid = false;
                 }
