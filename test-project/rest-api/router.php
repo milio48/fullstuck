@@ -90,14 +90,8 @@ fst_group('/api/v1', function() {
         $task = fst_db_select('tasks', ['id' => $id, 'user_id' => $current_user['id']], ['mode' => 'ROW']);
         if (!$task) fst_json(['error' => 'Task tidak ditemukan atau bukan milik Anda'], 404);
         
-        $req = fst_request();
-        // Karena PUT mungkin payload-nya dikirim via body mentah (x-www-form-urlencoded atau JSON), 
-        // pastikan ambil data mentah juga jika fst_request kosong. Tapi karena `fst_validate` butuh array:
-        if (empty($req)) {
-            $req = json_decode(file_get_contents('php://input'), true) ?? [];
-        }
-
-        $val = fst_validate($req, [
+        // fst_request() kini otomatis mendeteksi JSON body — tidak perlu boilerplate lagi!
+        $val = fst_validate(fst_request(), [
             'status' => 'required|in:pending,done'
         ]);
         

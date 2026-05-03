@@ -521,8 +521,23 @@ function fst_uri() {
     return $uri ?: '/';
 }
 function fst_method() { return $_SERVER['REQUEST_METHOD']; }
-function fst_input($key, $default = null) { return $_POST[$key] ?? $_GET[$key] ?? $default; }
-function fst_request() { return array_merge($_GET, $_POST); }
+function _fst_parsed_body() {
+    static $cache = null;
+    if ($cache !== null) return $cache;
+    $cache = array_merge($_GET, $_POST);
+    if (empty($_POST)) {
+        $raw = file_get_contents('php://input');
+        if (!empty($raw)) {
+            $json = json_decode($raw, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
+                $cache = array_merge($cache, $json);
+            }
+        }
+    }
+    return $cache;
+}
+function fst_input($key, $default = null) { $data = _fst_parsed_body(); return $data[$key] ?? $default; }
+function fst_request() { return _fst_parsed_body(); }
 function fst_file($key) { return isset($_FILES[$key]) && $_FILES[$key]['error'] === UPLOAD_ERR_OK ? $_FILES[$key] : null; }
 
 function fst_json($data, $status = 200) { fst_status_code($status); header('Content-Type: application/json'); echo json_encode($data); die(); }
