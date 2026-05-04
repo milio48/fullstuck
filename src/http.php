@@ -29,6 +29,8 @@ function _fst_parsed_body() {
 function fst_input($key, $default = null) { $data = _fst_parsed_body(); return $data[$key] ?? $default; }
 function fst_request() { return _fst_parsed_body(); }
 function fst_file($key) { return isset($_FILES[$key]) && $_FILES[$key]['error'] === UPLOAD_ERR_OK ? $_FILES[$key] : null; }
+function fst_escape($str) { return htmlspecialchars((string)$str, ENT_QUOTES, 'UTF-8'); }
+function e($str) { return fst_escape($str); }
 
 function fst_json($data, $status = 200) { fst_status_code($status); header('Content-Type: application/json'); echo json_encode($data); die(); }
 function fst_text($string, $status = 200) { fst_status_code($status); header('Content-Type: text/plain'); echo $string; die(); }

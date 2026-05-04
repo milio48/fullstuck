@@ -63,6 +63,8 @@ Ketika sebuah request masuk (biasanya diteruskan melalui `.htaccess` ke `fullstu
 - `fst_csrf_token()`: Menghasilkan (atau mengambil) token CSRF sesi aktif.
 - `fst_csrf_field()`: Menghasilkan tag HTML `<input type="hidden">` dengan token CSRF.
 - `fst_csrf_check()`: Memvalidasi token CSRF (biasanya dipanggil di dalam rute POST). Jika gagal, otomatis `fst_abort(403)`.
+- `fst_escape($str)`: Membersihkan string dari karakter berbahaya untuk mencegah XSS. Menggunakan `htmlspecialchars()` dengan `ENT_QUOTES` dan `UTF-8`.
+- `e($str)`: Alias pendek untuk `fst_escape()`. Contoh penggunaan di View: `<?= e($user['name']) ?>`.
 - `fst_upload($key, $folder, $options)`: Helper mempermudah proses upload file lengkap dengan filter ekstensi dan size.
 
 ### Utility & Debugging

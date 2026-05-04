@@ -176,9 +176,15 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
     }
 
     $dynamic_config = $fst_config['routing']['dynamic_config'] ?? [];
+    $pages_dir = $dynamic_config['pages_dir'] ?? '';
     $allowed_exec_exts = $dynamic_config['whitelist_filetype'] ?? ['php'];
     $index_files = $dynamic_config['index_files'] ?? ['index.php', 'index.html'];
     $directory_listing = $dynamic_config['directory_listing'] ?? false;
+
+    // Jika pages_dir dikonfigurasi, rebuild absolute_path agar mengarah ke subfolder tersebut
+    if (!empty($pages_dir)) {
+        $absolute_path = FST_ROOT_DIR . DIRECTORY_SEPARATOR . trim($pages_dir, '/\\') . $request_uri_path;
+    }
 
     if (is_file($absolute_path)) {
         $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));

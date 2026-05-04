@@ -427,7 +427,7 @@ HTML;
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
             'Response' => ['fst_json', 'fst_text', 'fst_redirect', 'fst_status_code'],
             'Session' => ['fst_session_set', 'fst_session_get', 'fst_session_forget', 'fst_flash_set', 'fst_flash_has', 'fst_flash_get'],
-            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check'],
+            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check', 'fst_escape', 'e'],
             'Upload' => ['fst_upload'],
             'Validation' => ['fst_validate'],
             'Debug' => ['fst_dump', 'fst_dd'],

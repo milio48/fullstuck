@@ -428,9 +428,15 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
     }
 
     $dynamic_config = $fst_config['routing']['dynamic_config'] ?? [];
+    $pages_dir = $dynamic_config['pages_dir'] ?? '';
     $allowed_exec_exts = $dynamic_config['whitelist_filetype'] ?? ['php'];
     $index_files = $dynamic_config['index_files'] ?? ['index.php', 'index.html'];
     $directory_listing = $dynamic_config['directory_listing'] ?? false;
+
+    // Jika pages_dir dikonfigurasi, rebuild absolute_path agar mengarah ke subfolder tersebut
+    if (!empty($pages_dir)) {
+        $absolute_path = FST_ROOT_DIR . DIRECTORY_SEPARATOR . trim($pages_dir, '/\\') . $request_uri_path;
+    }
 
     if (is_file($absolute_path)) {
         $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));
@@ -539,6 +545,8 @@ function _fst_parsed_body() {
 function fst_input($key, $default = null) { $data = _fst_parsed_body(); return $data[$key] ?? $default; }
 function fst_request() { return _fst_parsed_body(); }
 function fst_file($key) { return isset($_FILES[$key]) && $_FILES[$key]['error'] === UPLOAD_ERR_OK ? $_FILES[$key] : null; }
+function fst_escape($str) { return htmlspecialchars((string)$str, ENT_QUOTES, 'UTF-8'); }
+function e($str) { return fst_escape($str); }
 
 function fst_json($data, $status = 200) { fst_status_code($status); header('Content-Type: application/json'); echo json_encode($data); die(); }
 function fst_text($string, $status = 200) { fst_status_code($status); header('Content-Type: text/plain'); echo $string; die(); }
@@ -1253,7 +1261,7 @@ HTML;
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
             'Response' => ['fst_json', 'fst_text', 'fst_redirect', 'fst_status_code'],
             'Session' => ['fst_session_set', 'fst_session_get', 'fst_session_forget', 'fst_flash_set', 'fst_flash_has', 'fst_flash_get'],
-            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check'],
+            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check', 'fst_escape', 'e'],
             'Upload' => ['fst_upload'],
             'Validation' => ['fst_validate'],
             'Debug' => ['fst_dump', 'fst_dd'],
