@@ -71,6 +71,12 @@ Ketika sebuah request masuk (biasanya diteruskan melalui `.htaccess` ke `fullstu
 - `fst_validate($data, $rules)`: Memvalidasi array data (misal `$_POST`) terhadap aturan. Contoh aturan: `'required|email|min:5|max:20|numeric|in:a,b,c'`. Mengembalikan array `['valid' => bool, 'errors' => array, 'data' => array]`.
 - `fst_session_set`, `fst_session_get`, `fst_flash_set`, `fst_flash_get`: Manajemen Session dan Flash messages.
 - `fst_dump(...)`, `fst_dd(...)`: Fungsi debugging mirip *dump and die* di Laravel (Hanya berjalan di environment `development`).
+- `fst_config($key, $default)`: Mengambil nilai dari `fullstuck.json` menggunakan dot notation (contoh: `fst_config('routing.mode')`).
+
+### Zero-Config SPA
+- `fst_is_spa()`: Mengembalikan `true` jika request saat ini adalah navigasi SPA yang dipicu oleh agent `fst.js`.
+- `fst_spa_target()`: Mengembalikan tag HTML / Selector target yang diminta oleh agent SPA untuk diperbarui (default: `body`).
+- `fst_extract_html_tag($html, $tag)`: Mengekstrak innerHTML dari sebuah tag HTML spesifik (contoh: `body`) secara dinamis. Otomatis berjalan saat *Zero-Config SPA* aktif.
 
 ---
 

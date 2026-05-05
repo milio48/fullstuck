@@ -26,14 +26,11 @@
     </main>
 
     <footer class="main-footer">
-        <p>FullStuck.php SSR-to-SPA Experiment &bull; No JS Framework Required</p>
+        <p>FullStuck.php SSR-to-SPA Experiment &bull; Zero Config SPA Activated</p>
         <p class="footer-meta">
             Rendered: <?= date('H:i:s') ?> |
-            Mode: <span id="render-mode"><?= fst_is_fragment() ? 'SPA Fragment' : 'Full SSR' ?></span>
+            Mode: <span id="render-mode"><?= fst_is_spa() ? 'SPA Fragment' : 'Full SSR' ?></span>
         </p>
     </footer>
-
-    <!-- ↓ AGEN FRONTEND AUTO-INJECT ↓ -->
-    <script src="/assets/fst.js"></script>
 </body>
 </html>
