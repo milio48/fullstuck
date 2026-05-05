@@ -18,6 +18,8 @@ if (fst_is_dev()) {
     fst_get($admin_base . '/scan', 'fst_admin_show_scan_page');
     fst_post($admin_base . '/scan/run', 'fst_admin_run_scan');
 
+    fst_get($admin_base . '/integrity', 'fst_admin_show_integrity');
+    fst_get($admin_base . '/plugins', 'fst_admin_show_plugins');
 }
 
 
@@ -124,6 +126,8 @@ HTML;
     <a href="{$admin_base}/routes">Route List</a>
     <a href="{$admin_base}/server-info">Server Info</a>
     <a href="{$admin_base}/scan">Scan Project</a>
+    <a href="{$admin_base}/integrity">Integrity</a>
+    <a href="{$admin_base}/plugins">Plugins</a>
     <a href="{$admin_base}/logout" style="float:right;">Logout</a>
 </nav>
 <div class="container">
@@ -495,6 +499,98 @@ HTML;
         
         fst_flash_set('scan_results', $results);
         fst_redirect($admin_base . '/scan');
+    }
+
+    function fst_check_integrity() {
+        $file_path = FST_ROOT_DIR . '/fullstuck.php';
+        if (!file_exists($file_path)) return false;
+        
+        $content = file_get_contents($file_path);
+        if (!preg_match('/FST_HASH:\s*([a-f0-9]{64})/', $content, $matches)) return false;
+        
+        $declared_hash = $matches[1];
+        $parts = explode(" */\n", $content, 2);
+        if (count($parts) !== 2) return false;
+        
+        $actual_hash = hash('sha256', $parts[1]);
+        return [
+            'valid' => hash_equals($declared_hash, $actual_hash),
+            'declared' => $declared_hash,
+            'actual' => $actual_hash
+        ];
+    }
+
+    function fst_admin_show_integrity() {
+        fst_admin_check_auth();
+        $integrity = fst_check_integrity();
+        
+        $remote_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/version.json";
+        $remote_info = "<i>Not checked</i>";
+        
+        // Remote check attempt
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_json = @file_get_contents($remote_url, false, $ctx);
+        if ($remote_json) {
+            $remote_data = json_decode($remote_json, true);
+            if ($remote_data && isset($remote_data['hash'])) {
+                if ($integrity && $integrity['declared'] === $remote_data['hash']) {
+                    $remote_info = "<span style='color:green;'>✔ Match with official GitHub registry (v{$remote_data['version']})</span>";
+                } else {
+                    $remote_info = "<span style='color:red;'>❌ Mismatch with official GitHub registry!</span>";
+                }
+            }
+        } else {
+            $remote_info = "<span style='color:orange;'>Failed to connect to GitHub</span>";
+        }
+        
+        $html = "<h2>File Integrity Monitoring (FIM)</h2>";
+        if (!$integrity) {
+            $html .= "<div class='alert-warning'>Cannot perform integrity check. <code>fullstuck.php</code> not found or malformed header.</div>";
+        } else {
+            if ($integrity['valid']) {
+                $html .= "<div style='color:green; font-size:1.2em; margin-bottom:10px;'>✔ Local Integrity OK: The core file has not been tampered with.</div>";
+            } else {
+                $html .= "<div style='color:red; font-size:1.2em; font-weight:bold; margin-bottom:10px;'>❌ Local Integrity FAILED: The core file has been modified!</div>";
+            }
+            $html .= "<ul>";
+            $html .= "<li><strong>Declared Hash (Line 1):</strong> <code>{$integrity['declared']}</code></li>";
+            $html .= "<li><strong>Actual Content Hash:</strong> <code>{$integrity['actual']}</code></li>";
+            $html .= "<li><strong>Remote Verification:</strong> {$remote_info}</li>";
+            $html .= "</ul>";
+        }
+        
+        fst_admin_render_page('Integrity Check', $html);
+    }
+
+    function fst_admin_show_plugins() {
+        fst_admin_check_auth();
+        global $fst_config;
+        $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
+        
+        $local_store_file = FST_ROOT_DIR . '/store.json';
+        $plugins = [];
+        if (file_exists($local_store_file)) {
+            $plugins = json_decode(file_get_contents($local_store_file), true) ?: [];
+        }
+        
+        $html = "<h2>Plugin Marketplace</h2>";
+        $html .= "<p>List of official plugins from <code>store.json</code>:</p>";
+        
+        if (empty($plugins)) {
+            $html .= "<p>No plugins found in store.json.</p>";
+        } else {
+            $html .= "<table><thead><tr><th>Plugin Name</th><th>Description</th><th>Action</th></tr></thead><tbody>";
+            foreach ($plugins as $plugin) {
+                $html .= "<tr>";
+                $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong></td>";
+                $html .= "<td>" . htmlspecialchars($plugin['description'] ?? '') . "</td>";
+                $html .= "<td><button onclick=\"alert('Auto-install feature coming soon!')\">Install</button></td>";
+                $html .= "</tr>";
+            }
+            $html .= "</tbody></table>";
+        }
+        
+        fst_admin_render_page('Plugins', $html);
     }
 
 }

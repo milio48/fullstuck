@@ -1,0 +1,76 @@
+{
+    "environment": "development",
+    "admin": {
+        "page_url": "/stuck",
+        "password": "$2y$12$QCgb6FklY0z23LGjdRn7ieRUF0b4oXaW5AQ91oai8fi7RFDhPF57a"
+    },
+    "database": {
+        "driver": "none",
+        "mysql": {
+            "host": "localhost",
+            "dbname": "fullstuck_db",
+            "username": "root",
+            "password": ""
+        },
+        "sqlite": {
+            "database_path": "database.sqlite"
+        }
+    },
+    "routing": {
+        "mode": "dynamic",
+        "base_path": "/",
+        "public_folders": [
+            "assets",
+            "uploads",
+            "storage/public"
+        ],
+        "error_handlers": {
+            "404": "views/errors/404.php",
+            "403": "Sorry, you do not have permission.",
+            "405": "Method not allowed.",
+            "500": "views/errors/500.php"
+        },
+        "static_config": {
+            "routes_file": [
+                "router.php"
+            ],
+            "dynamic_fallback": false
+        },
+        "dynamic_config": {
+            "whitelist_filetype": [
+                "php",
+                "html"
+            ],
+            "index_files": [
+                "index.php",
+                "index.html"
+            ],
+            "directory_listing": false
+        },
+        "regex_shortcuts": {
+            "i": "([0-9]+)",
+            "a": "([a-zA-Z0-9]+)",
+            "s": "([a-zA-Z0-9\\-]+)",
+            "h": "([a-fA-F0-9]+)",
+            "any": "([^/]+)"
+        }
+    },
+    "mime_types": {
+        "css": "text/css",
+        "js": "application/javascript",
+        "jpg": "image/jpeg",
+        "jpeg": "image/jpeg",
+        "png": "image/png",
+        "gif": "image/gif",
+        "svg": "image/svg+xml",
+        "woff": "font/woff",
+        "woff2": "font/woff2",
+        "ttf": "font/ttf",
+        "eot": "application/vnd.ms-fontobject",
+        "html": "text/html",
+        "htm": "text/html",
+        "txt": "text/plain",
+        "json": "application/json",
+        "pdf": "application/pdf"
+    }
+}

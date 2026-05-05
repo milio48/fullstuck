@@ -127,4 +127,49 @@ function fst_is_dev() {
     global $fst_config;
     return ($fst_config['environment'] ?? 'production') === 'development';
 }
+
+function fst_config($key = null, $default = null) {
+    global $fst_config;
+    if ($key === null) return $fst_config;
+    $keys = explode('.', $key);
+    $val = $fst_config;
+    foreach ($keys as $k) {
+        if (is_array($val) && array_key_exists($k, $val)) {
+            $val = $val[$k];
+        } else {
+            return $default;
+        }
+    }
+    return $val;
+}
+
+function fst_is_spa(): bool {
+    $header_name = fst_config('spa.header_request', 'X-FST-Request');
+    $req_header = 'HTTP_' . str_replace('-', '_', strtoupper($header_name));
+    return isset($_SERVER[$req_header]);
+}
+
+function fst_spa_target(): string {
+    $header_name = fst_config('spa.header_target', 'X-FST-Target');
+    $target_header = 'HTTP_' . str_replace('-', '_', strtoupper($header_name));
+    return $_SERVER[$target_header] ?? 'body';
+}
+
+function fst_extract_html_tag($html, $tag = 'body') {
+    if (empty(trim($html))) return '';
+    libxml_use_internal_errors(true);
+    $dom = new DOMDocument();
+    $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    $elements = $dom->getElementsByTagName($tag);
+    if ($elements->length > 0) {
+        $inner_html = '';
+        foreach ($elements->item(0)->childNodes as $child) {
+            $inner_html .= $dom->saveHTML($child);
+        }
+        return $inner_html;
+    }
+    return $html;
+}
+
 ?>

@@ -7,5 +7,14 @@ if (isset($fst_config['routing']['mode']) && $fst_config['routing']['mode'] === 
     }
 }
 
+// Auto-Discovery Plugins
+$plugin_dir = FST_ROOT_DIR . '/fst-plugins';
+if (is_dir($plugin_dir)) {
+    foreach (glob($plugin_dir . '/*.php') as $plugin) {
+        require_once $plugin;
+    }
+}
+
 fst_run();
 ?>
+

@@ -1,9 +1,13 @@
 <?php
-// fullstuck.php v0.2.6 (Compiled from /src)
+/**
+ * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
+ * 📚 Documentation & Prompt Guide: https://github.com/milio48/fullstuck/docs
+ * 💡 Version: 0.1.0 | FST_HASH: ea5689e116ff2d929eeb4892684172edbe6dd646b5a3637e5d3fdca17fea45de
+ */
+define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', function(e) { const link = e.target.closest(\'a\'); if (!link || !link.href) return; if (link.target === \'_blank\' || link.hasAttribute(\'download\')) return; if (link.hostname !== window.location.hostname) return; if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); fstNavigate(link.href); }); window.addEventListener(\'popstate\', function(e) { fstNavigate(window.location.href, false); }); async function fstNavigate(url, pushState = true) { try { const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const headers = {}; headers[reqHeader] = \'true\'; headers[targetHeader] = \'body\'; // Default target const response = await fetch(url, { headers: headers }); if (!response.ok) { window.location.href = url; // fallback return; } const html = await response.text(); document.body.innerHTML = html; if (pushState) { window.history.pushState({}, \'\', url); } // Dispatch fst:load event for plugins/scripts to re-initialize document.dispatchEvent(new Event(\'fst:load\')); // Re-execute scripts inside body const scripts = document.body.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); } catch (err) { window.location.href = url; // fallback } } // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
 
-// ==========================================
+
 // FILE: core.php
-// ==========================================
 session_start();
 if (!defined('FST_ROOT_DIR')) {
     $root = __DIR__;
@@ -50,13 +54,12 @@ function _fst_exception_handler($e) {
     http_response_code(500);
     
     if (!fst_is_dev()) {
-        // Mode Production: Log pesan dan sembunyikan detail
+
         error_log($e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
         if (function_exists('fst_abort')) { fst_abort(500, "Internal Server Error."); } 
         else { die("Internal Server Error."); }
     }
-    
-    // Mode Development: Tampilkan UI Cantik
+
     $message = htmlspecialchars($e->getMessage());
     $file = htmlspecialchars($e->getFile());
     $line = $e->getLine();
@@ -133,9 +136,51 @@ function fst_is_dev() {
     return ($fst_config['environment'] ?? 'production') === 'development';
 }
 
-// ==========================================
+function fst_config($key = null, $default = null) {
+    global $fst_config;
+    if ($key === null) return $fst_config;
+    $keys = explode('.', $key);
+    $val = $fst_config;
+    foreach ($keys as $k) {
+        if (is_array($val) && array_key_exists($k, $val)) {
+            $val = $val[$k];
+        } else {
+            return $default;
+        }
+    }
+    return $val;
+}
+
+function fst_is_spa(): bool {
+    $header_name = fst_config('spa.header_request', 'X-FST-Request');
+    $req_header = 'HTTP_' . str_replace('-', '_', strtoupper($header_name));
+    return isset($_SERVER[$req_header]);
+}
+
+function fst_spa_target(): string {
+    $header_name = fst_config('spa.header_target', 'X-FST-Target');
+    $target_header = 'HTTP_' . str_replace('-', '_', strtoupper($header_name));
+    return $_SERVER[$target_header] ?? 'body';
+}
+
+function fst_extract_html_tag($html, $tag = 'body') {
+    if (empty(trim($html))) return '';
+    libxml_use_internal_errors(true);
+    $dom = new DOMDocument();
+    $dom->loadHTML('<?xml encoding="utf-8" ' . $html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+    libxml_clear_errors();
+    $elements = $dom->getElementsByTagName($tag);
+    if ($elements->length > 0) {
+        $inner_html = '';
+        foreach ($elements->item(0)->childNodes as $child) {
+            $inner_html .= $dom->saveHTML($child);
+        }
+        return $inner_html;
+    }
+    return $html;
+}
+
 // FILE: database.php
-// ==========================================
 try {
     if (!$fst_config) throw new Exception("Configuration not loaded.");
 
@@ -248,9 +293,7 @@ function fst_db_delete($table, $conditions) {
     return fst_db('EXEC', $sql, $params);
 }
 
-// ==========================================
 // FILE: router.php
-// ==========================================
 function fst_abort($code, $message = '') {
     global $fst_config;
     http_response_code($code);
@@ -360,7 +403,7 @@ function _fst_get_request_paths() {
 }
 
 function _fst_is_protected_file($absolute_path) {
-    // Protect core framework file and configuration file
+
     $normalized_abs_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $absolute_path);
     $normalized_file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, FST_ROOT_DIR . '/fullstuck.php');
     $normalized_config_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, FST_CONFIG_FILE);
@@ -395,13 +438,12 @@ function _fst_match_static_routes() {
         
         if (preg_match($pattern, $uri, $matches)) {
             array_shift($matches); // Remove the full match string
-            
-            // Execute Middleware
+
             $middleware_list = $route[4] ?? [];
             foreach ($middleware_list as $mw) {
                 if (is_callable($mw)) {
                     $result = call_user_func($mw);
-                    // If middleware returns false, halt the route callback execution
+
                     if ($result === false) {
                         $fst_route_found = true; 
                         return true; 
@@ -433,7 +475,6 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
     $index_files = $dynamic_config['index_files'] ?? ['index.php', 'index.html'];
     $directory_listing = $dynamic_config['directory_listing'] ?? false;
 
-    // Jika pages_dir dikonfigurasi, rebuild absolute_path agar mengarah ke subfolder tersebut
     if (!empty($pages_dir)) {
         $absolute_path = FST_ROOT_DIR . DIRECTORY_SEPARATOR . trim($pages_dir, '/\\') . $request_uri_path;
     }
@@ -488,33 +529,61 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
 function fst_run() {
     global $fst_route_found;
     
-    // 1. Ambil path dan URI yang sudah dibersihkan
+    ob_start();
+    $handled = false;
+
     $req = _fst_get_request_paths(); 
-    
-    // 2. Keamanan: Cegah akses file krusial (fullstuck.php, config)
+
     if (_fst_is_protected_file($req['absolute_path'])) {
         fst_abort(404);
-        return;
+        $handled = true;
     }
 
-    // 3. Prioritas #1: Serve Static Asset (gambar, css, js)
-    if (_fst_serve_static_asset($req['uri_path'], $req['absolute_path'])) return;
-    
-    // 4. Prioritas #2: Static Routing (Whitelist route & Admin)
-    if (_fst_match_static_routes()) return;
-    
-    // 5. Prioritas #3: Dynamic Routing (Fallback ke direktori)
-    if (_fst_match_dynamic_routes($req['uri_path'], $req['absolute_path'])) return;
+    if (!$handled) {
 
-    // 6. Jika semua gagal, berikan 404
-    if (!$fst_route_found) {
+        if (_fst_serve_static_asset($req['uri_path'], $req['absolute_path'])) {
+            $handled = true;
+        }
+    }
+    
+    if (!$handled) {
+
+        if (_fst_match_static_routes()) {
+            $handled = true;
+        }
+    }
+    
+    if (!$handled) {
+
+        if (_fst_match_dynamic_routes($req['uri_path'], $req['absolute_path'])) {
+            $handled = true;
+        }
+    }
+
+    if (!$handled && !$fst_route_found) {
         fst_abort(404);
     }
+    
+    $output = ob_get_clean();
+
+    if (fst_is_spa()) {
+        $target = fst_spa_target();
+        $output = fst_extract_html_tag($output, $target); 
+    } 
+
+    else if (fst_config('spa.enabled', false)) {
+        $script_id = fst_config('spa.script_id', 'fst-spa-agent');
+        $req_header = fst_config('spa.header_request', 'X-FST-Request');
+        $target_header = fst_config('spa.header_target', 'X-FST-Target');
+        $inject_id = $script_id ? 'id="'.$script_id.'" data-req-header="'.$req_header.'" data-target-header="'.$target_header.'"' : '';
+        $script_tag = "<script {$inject_id}>\n" . (defined('FST_SPA_JS_CODE') ? FST_SPA_JS_CODE : '') . "\n</script>";
+        $output = str_ireplace('</body>', $script_tag . '</body>', $output);
+    }
+
+    echo $output;
 }
 
-// ==========================================
 // FILE: http.php
-// ==========================================
 function fst_uri() {
     global $fst_config;
     $base_path = $fst_config['routing']['base_path'] ?? '/';
@@ -591,9 +660,7 @@ function fst_upload($key, $folder, $options = []) {
     else return ['success' => false, 'error' => 'Failed to move uploaded file.', 'path' => null];
 }
 
-// ==========================================
 // FILE: view.php
-// ==========================================
 function fst_view($path, $data = []) { extract($data); require FST_ROOT_DIR . '/' . $path; }
 function fst_partial($path, $data = []) { fst_view($path, $data); }
 
@@ -651,9 +718,7 @@ function fst_show_directory_listing($dir_path, $uri_prefix) {
     echo "</ul><hr>"; 
 }
 
-// ==========================================
 // FILE: utility.php
-// ==========================================
 function fst_dump(...$vars) {
     global $fst_config;
     if (!fst_is_dev()) {
@@ -665,7 +730,6 @@ function fst_dump(...$vars) {
 }
 function fst_dd(...$vars) { fst_dump(...$vars); die(); }
 
-// Helper internal: fallback strlen jika mbstring tidak tersedia
 function _fst_strlen($str) {
     return function_exists('mb_strlen') ? mb_strlen($str, 'UTF-8') : strlen($str);
 }
@@ -689,7 +753,6 @@ function fst_validate($data, $rules) {
                 $rule_name = $rule;
             }
 
-            // Abaikan validasi lanjutan jika kosong dan tidak di-set required
             if ($rule_name !== 'required' && ($value === null || trim((string)$value) === '')) {
                 continue;
             }
@@ -741,9 +804,7 @@ function fst_validate($data, $rules) {
     ];
 }
 
-// ==========================================
 // FILE: install.php
-// ==========================================
 function fst_handle_installation() {
     $error_message = null;
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -830,9 +891,7 @@ HTML;
 return $html;
 }
 
-// ==========================================
 // FILE: admin.php
-// ==========================================
 if (fst_is_dev()) {
     $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
@@ -852,6 +911,8 @@ if (fst_is_dev()) {
     fst_get($admin_base . '/scan', 'fst_admin_show_scan_page');
     fst_post($admin_base . '/scan/run', 'fst_admin_run_scan');
 
+    fst_get($admin_base . '/integrity', 'fst_admin_show_integrity');
+    fst_get($admin_base . '/plugins', 'fst_admin_show_plugins');
 }
 
 
@@ -875,7 +936,7 @@ if (fst_is_dev()) {
         $csrf = fst_csrf_field();
 
         $html = <<<HTML
-<!DOCTYPE html><html lang="en"><head><title>Admin Login</title><style>/* CSS Sederhana */ body{font-family:sans-serif; max-width:400px; margin:50px auto; padding:20px; border:1px solid #ccc;} input{width:100%; padding:8px; margin-bottom:10px;} button{padding:10px 15px;}</style></head>
+<!DOCTYPE html><html lang="en"><head><title>Admin Login</title><style> body{font-family:sans-serif; max-width:400px; margin:50px auto; padding:20px; border:1px solid #ccc;} input{width:100%; padding:8px; margin-bottom:10px;} button{padding:10px 15px;}</style></head>
 <body><h1>Admin Login</h1>{$error_html}
 <form method="POST" action="{$admin_base}/login">{$csrf}
 <label for="password">Password:</label><input type="password" name="password" id="password" required><button type="submit">Login</button></form></body></html>
@@ -934,7 +995,7 @@ HTML;
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left;}
     th { background-color: #f2f2f2;}
 
-    /* === GAYA PERINGATAN BARU === */
+    
     .alert-warning {
         background-color: #fffbe6;
         border: 1px solid #ffe58f;
@@ -958,6 +1019,8 @@ HTML;
     <a href="{$admin_base}/routes">Route List</a>
     <a href="{$admin_base}/server-info">Server Info</a>
     <a href="{$admin_base}/scan">Scan Project</a>
+    <a href="{$admin_base}/integrity">Integrity</a>
+    <a href="{$admin_base}/plugins">Plugins</a>
     <a href="{$admin_base}/logout" style="float:right;">Logout</a>
 </nav>
 <div class="container">
@@ -978,18 +1041,17 @@ HTML;
         $warnings = [];
         $errors = [];
 
-        // Ambil environment saat ini, default ke 'production' jika tidak ada
         $current_env = $fst_config['environment'] ?? 'production';
 
         if ($current_env === 'development') {
-            // Kasus 1: Ini 'development'. Tampilkan warning besar.
+
             $dev_warning_html = '<div class="alert-warning"><strong>WARNING:</strong> Environment is set to \'development\'. Make sure to change it to \'production\' before going live!</div>';
         } elseif ($current_env !== 'production') {
-            // Kasus 2: Ini BUKAN 'development' dan BUKAN 'production'
-            // (misal: 'staging', 'testing', dll). Tampilkan warning biasa.
+
+
             $warnings[] = "Environment is set to '{$current_env}'. This is not a 'production' build.";
         }
-        // Kasus 3: Ini 'production', tidak ada warning yang ditambahkan.
+
 
         if ($fst_config['routing']['mode'] === 'static') {
             $route_files = (array)($fst_config['routing']['static_config']['routes_file'] ?? []);
@@ -1014,7 +1076,6 @@ HTML;
             }
         }
 
-        // Cek Koneksi DB
         $db_status = '';
         $db_driver = $fst_config['database']['driver'] ?? 'none';
         
@@ -1030,22 +1091,19 @@ HTML;
                 $errors[] = "Database connection test failed: " . $e->getMessage();
             }
         } else {
-            // Driver BUKAN 'none', tapi $fst_pdo tetap null (koneksi gagal saat boot)
+
             $db_status = '<span style="color:red;">❌ FAILED</span> (Connection failed during boot)';
             $errors[] = "Database connection failed during boot. Check 'fullstuck.json' or server logs.";
         }
 
         $content = "<h2>Configuration Status</h2>";
-        
-        // Tampilkan warning khusus di bagian paling atas
+
         $content .= $dev_warning_html; 
-        
-        // Tampilkan environment yang sedang berjalan
+
         $content .= "<p><strong>Environment:</strong> " . htmlspecialchars($current_env) . "</p>";
         $content .= "<p><strong>Routing Mode:</strong> " . htmlspecialchars($fst_config['routing']['mode']) . "</p>";
         $content .= "<p><strong>Database Status:</strong> {$db_status}</p>";
 
-        // Extension Health Check
         $ext_checks = [
             ['name' => 'mbstring', 'level' => 'recommended', 'note' => 'Digunakan untuk penghitungan panjang string multibyte (validasi). Tanpa ini, framework fallback ke strlen().'],
             ['name' => 'fileinfo', 'level' => 'recommended', 'note' => 'Meningkatkan deteksi MIME type saat upload file.'],
@@ -1331,16 +1389,112 @@ HTML;
         fst_redirect($admin_base . '/scan');
     }
 
+    function fst_check_integrity() {
+        $file_path = FST_ROOT_DIR . '/fullstuck.php';
+        if (!file_exists($file_path)) return false;
+        
+        $content = file_get_contents($file_path);
+        if (!preg_match('/FST_HASH:\s*([a-f0-9]{64})/', $content, $matches)) return false;
+        
+        $declared_hash = $matches[1];
+        $parts = explode(" */\n", $content, 2);
+        if (count($parts) !== 2) return false;
+        
+        $actual_hash = hash('sha256', $parts[1]);
+        return [
+            'valid' => hash_equals($declared_hash, $actual_hash),
+            'declared' => $declared_hash,
+            'actual' => $actual_hash
+        ];
+    }
+
+    function fst_admin_show_integrity() {
+        fst_admin_check_auth();
+        $integrity = fst_check_integrity();
+        
+        $remote_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/version.json";
+        $remote_info = "<i>Not checked</i>";
+
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_json = @file_get_contents($remote_url, false, $ctx);
+        if ($remote_json) {
+            $remote_data = json_decode($remote_json, true);
+            if ($remote_data && isset($remote_data['hash'])) {
+                if ($integrity && $integrity['declared'] === $remote_data['hash']) {
+                    $remote_info = "<span style='color:green;'>✔ Match with official GitHub registry (v{$remote_data['version']})</span>";
+                } else {
+                    $remote_info = "<span style='color:red;'>❌ Mismatch with official GitHub registry!</span>";
+                }
+            }
+        } else {
+            $remote_info = "<span style='color:orange;'>Failed to connect to GitHub</span>";
+        }
+        
+        $html = "<h2>File Integrity Monitoring (FIM)</h2>";
+        if (!$integrity) {
+            $html .= "<div class='alert-warning'>Cannot perform integrity check. <code>fullstuck.php</code> not found or malformed header.</div>";
+        } else {
+            if ($integrity['valid']) {
+                $html .= "<div style='color:green; font-size:1.2em; margin-bottom:10px;'>✔ Local Integrity OK: The core file has not been tampered with.</div>";
+            } else {
+                $html .= "<div style='color:red; font-size:1.2em; font-weight:bold; margin-bottom:10px;'>❌ Local Integrity FAILED: The core file has been modified!</div>";
+            }
+            $html .= "<ul>";
+            $html .= "<li><strong>Declared Hash (Line 1):</strong> <code>{$integrity['declared']}</code></li>";
+            $html .= "<li><strong>Actual Content Hash:</strong> <code>{$integrity['actual']}</code></li>";
+            $html .= "<li><strong>Remote Verification:</strong> {$remote_info}</li>";
+            $html .= "</ul>";
+        }
+        
+        fst_admin_render_page('Integrity Check', $html);
+    }
+
+    function fst_admin_show_plugins() {
+        fst_admin_check_auth();
+        global $fst_config;
+        $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
+        
+        $local_store_file = FST_ROOT_DIR . '/store.json';
+        $plugins = [];
+        if (file_exists($local_store_file)) {
+            $plugins = json_decode(file_get_contents($local_store_file), true) ?: [];
+        }
+        
+        $html = "<h2>Plugin Marketplace</h2>";
+        $html .= "<p>List of official plugins from <code>store.json</code>:</p>";
+        
+        if (empty($plugins)) {
+            $html .= "<p>No plugins found in store.json.</p>";
+        } else {
+            $html .= "<table><thead><tr><th>Plugin Name</th><th>Description</th><th>Action</th></tr></thead><tbody>";
+            foreach ($plugins as $plugin) {
+                $html .= "<tr>";
+                $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong></td>";
+                $html .= "<td>" . htmlspecialchars($plugin['description'] ?? '') . "</td>";
+                $html .= "<td><button onclick=\"alert('Auto-install feature coming soon!')\">Install</button></td>";
+                $html .= "</tr>";
+            }
+            $html .= "</tbody></table>";
+        }
+        
+        fst_admin_render_page('Plugins', $html);
+    }
+
 }
 
-// ==========================================
 // FILE: bootstrap.php
-// ==========================================
 if (isset($fst_config['routing']['mode']) && $fst_config['routing']['mode'] === 'static') {
     $routes_files = (array) ($fst_config['routing']['static_config']['routes_file'] ?? []);
     foreach ($routes_files as $file) {
         if (file_exists(FST_ROOT_DIR . '/' . $file)) require FST_ROOT_DIR . '/' . $file;
         else fst_abort(500, "Configuration Error: Routes file not found at '{$file}'");
+    }
+}
+
+$plugin_dir = FST_ROOT_DIR . '/fst-plugins';
+if (is_dir($plugin_dir)) {
+    foreach (glob($plugin_dir . '/*.php') as $plugin) {
+        require_once $plugin;
     }
 }
 

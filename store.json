@@ -1,0 +1,8 @@
+[
+  {
+    "id": "fst-plugin-demo",
+    "name": "Demo Plugin",
+    "description": "Sebuah plugin contoh untuk mendemonstrasikan sistem plugin.",
+    "url": "https://raw.githubusercontent.com/milio48/fullstuck/main/examples/demo.zip"
+  }
+]

@@ -236,27 +236,62 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
 function fst_run() {
     global $fst_route_found;
     
+    ob_start();
+    $handled = false;
+    
     // 1. Ambil path dan URI yang sudah dibersihkan
     $req = _fst_get_request_paths(); 
     
     // 2. Keamanan: Cegah akses file krusial (fullstuck.php, config)
     if (_fst_is_protected_file($req['absolute_path'])) {
         fst_abort(404);
-        return;
+        $handled = true;
     }
 
-    // 3. Prioritas #1: Serve Static Asset (gambar, css, js)
-    if (_fst_serve_static_asset($req['uri_path'], $req['absolute_path'])) return;
+    if (!$handled) {
+        // 3. Prioritas #1: Serve Static Asset (gambar, css, js)
+        if (_fst_serve_static_asset($req['uri_path'], $req['absolute_path'])) {
+            $handled = true;
+        }
+    }
     
-    // 4. Prioritas #2: Static Routing (Whitelist route & Admin)
-    if (_fst_match_static_routes()) return;
+    if (!$handled) {
+        // 4. Prioritas #2: Static Routing (Whitelist route & Admin)
+        if (_fst_match_static_routes()) {
+            $handled = true;
+        }
+    }
     
-    // 5. Prioritas #3: Dynamic Routing (Fallback ke direktori)
-    if (_fst_match_dynamic_routes($req['uri_path'], $req['absolute_path'])) return;
+    if (!$handled) {
+        // 5. Prioritas #3: Dynamic Routing (Fallback ke direktori)
+        if (_fst_match_dynamic_routes($req['uri_path'], $req['absolute_path'])) {
+            $handled = true;
+        }
+    }
 
     // 6. Jika semua gagal, berikan 404
-    if (!$fst_route_found) {
+    if (!$handled && !$fst_route_found) {
         fst_abort(404);
     }
+    
+    $output = ob_get_clean();
+
+    // Eksekusi Clipping HTML jika ini permintaan SPA
+    if (fst_is_spa()) {
+        $target = fst_spa_target();
+        $output = fst_extract_html_tag($output, $target); 
+    } 
+    // Jika bukan request SPA, tapi SPA mode aktif, injeksi Javascript-nya
+    else if (fst_config('spa.enabled', false)) {
+        $script_id = fst_config('spa.script_id', 'fst-spa-agent');
+        $req_header = fst_config('spa.header_request', 'X-FST-Request');
+        $target_header = fst_config('spa.header_target', 'X-FST-Target');
+        $inject_id = $script_id ? 'id="'.$script_id.'" data-req-header="'.$req_header.'" data-target-header="'.$target_header.'"' : '';
+        $script_tag = "<script {$inject_id}>\n" . (defined('FST_SPA_JS_CODE') ? FST_SPA_JS_CODE : '') . "\n</script>";
+        $output = str_ireplace('</body>', $script_tag . '</body>', $output);
+    }
+
+    echo $output;
 }
+
 ?>
