@@ -55,8 +55,8 @@ Setiap kali menambah fungsi baru ke framework (contoh: `fst_db_select`, `fst_val
 |---|-------------|---------------|
 | 1 | `src/*.php` | Implementasi fungsi baru. |
 | 2 | `src/admin.php` → `$function_groups` | **Daftarkan** nama fungsi ke grup yang sesuai di dalam array `$function_groups` pada fungsi `fst_admin_run_scan()`. Jika tidak, fungsi akan muncul sebagai **Unknown** saat user menjalankan fitur Scan Project di Admin Dashboard. |
-| 3 | `docs-dev/DOCUMENTATION.md` | Tambahkan deskripsi fungsi baru di bagian API Reference. |
-| 4 | `docs-dev/CHANGELOG.md` | Catat di bawah section `[Unreleased]`. |
+| 3 | `docs/v0.1.0.md` | Tambahkan deskripsi fungsi baru di bagian API Reference. |
+| 4 | `CHANGELOG.md` | Catat di bawah section `[Unreleased]`. |
 | 5 | `php src/compiler-fullstuck.php` | Compile ulang agar `fullstuck.php` di root sinkron. |
 
 *(Note untuk AI Agent: Sebelum Anda memberikan summary final ke user, pastikan file `fullstuck.php` di root selalu ikut ter-update akibat proses build, agar sinkron dengan perubahan pada `src/`).*
