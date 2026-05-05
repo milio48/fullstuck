@@ -12,9 +12,10 @@ Tidak perlu Composer. Tidak perlu konfigurasi rumit. Cukup **1 file**, buka di b
 - 📦 **Single File** — Seluruh framework dikemas dalam satu file `fullstuck.php` (~1000 baris).
 - ⚡ **Instant Setup** — Drop file ke server, buka di browser, selesai. Setup Wizard otomatis membuat konfigurasi.
 - 🔀 **Hybrid Routing** — Pilih mode *Static* (gaya Laravel/Express) atau *Dynamic* (gaya PHP tradisional). Atau gabungkan keduanya.
+- 🚀 **Zero-Config SPA** — Ubah aplikasi Multi-Page tradisional Anda menjadi Single-Page Application hanya dengan menyalakan satu opsi di config. Tidak butuh React/Vue.
 - 🛡️ **Built-in Security** — CSRF protection, XSS escaping, dan input validation sudah tersedia tanpa plugin tambahan.
 - 🗄️ **Database Ready** — PDO wrapper bawaan + Query Builder ringan untuk SQLite & MySQL.
-- 🔧 **Developer Dashboard** — Panel admin tersembunyi untuk monitoring konfigurasi, route, dan scanning project (hanya di mode development).
+- 🔧 **Developer Dashboard** — Panel admin tersembunyi untuk monitoring konfigurasi, route, plugin, dan scanning project.
 
 ---
 
