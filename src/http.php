@@ -40,6 +40,10 @@ function fst_redirect($url, $code = 302) {
     if (!preg_match('/^(http:\/\/|https:\/\/|\/\/)/', $url)) {
         $url = rtrim($base_path, '/') . '/' . ltrim($url, '/');
     }
+    if (fst_is_spa()) {
+        header("X-FST-Redirect: " . $url);
+        die();
+    }
     header("Location: " . $url, true, $code);
     die();
 }

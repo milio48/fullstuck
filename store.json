@@ -1,8 +1,8 @@
 [
   {
-    "id": "fst-plugin-demo",
-    "name": "Demo Plugin",
-    "description": "Sebuah plugin contoh untuk mendemonstrasikan sistem plugin.",
-    "url": "https://raw.githubusercontent.com/milio48/fullstuck/main/examples/demo.zip"
+    "id": "hello-world",
+    "name": "Hello FullStuck",
+    "description": "Plugin sederhana untuk mendemonstrasikan pendaftaran rute /hello-world secara otomatis.",
+    "url": "https://raw.githubusercontent.com/milio48/fullstuck/main/store/fst-hello-world.php"
   }
 ]

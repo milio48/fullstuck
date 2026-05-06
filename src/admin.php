@@ -20,6 +20,7 @@ if (fst_is_dev()) {
 
     fst_get($admin_base . '/integrity', 'fst_admin_show_integrity');
     fst_get($admin_base . '/plugins', 'fst_admin_show_plugins');
+    fst_post($admin_base . '/plugins/install', 'fst_admin_install_plugin');
 }
 
 
@@ -418,7 +419,7 @@ HTML;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $function_groups = [
-            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev'],
+            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_extract_html_tag'],
             'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
             'Views' => [
                 'fst_view',
@@ -427,7 +428,7 @@ HTML;
                 'fst_serve_dynamic_file',
                 'fst_show_directory_listing'
             ],
-            'Request' => ['fst_uri', 'fst_method', 'fst_input', 'fst_request', 'fst_file'],
+            'Request' => ['fst_uri', 'fst_method', 'fst_input', 'fst_request', 'fst_file', 'fst_is_spa', 'fst_spa_target'],
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
             'Response' => ['fst_json', 'fst_text', 'fst_redirect', 'fst_status_code'],
             'Session' => ['fst_session_set', 'fst_session_get', 'fst_session_forget', 'fst_flash_set', 'fst_flash_has', 'fst_flash_get'],
@@ -441,7 +442,8 @@ HTML;
                 'fst_admin_do_logout', 'fst_admin_render_page', 'fst_admin_show_monitor',
                 'fst_admin_show_config', 'fst_admin_save_config', 'fst_admin_show_routes',
                 'fst_get_server_info', 'fst_admin_show_server_info', 'fst_admin_show_scan_page',
-                'fst_admin_run_scan'
+                'fst_admin_run_scan', 'fst_admin_show_integrity', 'fst_admin_show_plugins',
+                'fst_admin_install_plugin'
             ]
         ];
 
@@ -567,30 +569,104 @@ HTML;
         global $fst_config;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         
+        $remote_store_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/store.json";
         $local_store_file = FST_ROOT_DIR . '/store.json';
         $plugins = [];
-        if (file_exists($local_store_file)) {
+        $is_remote = false;
+
+        // 1. Coba ambil dari Remote (GitHub)
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_json = @file_get_contents($remote_store_url, false, $ctx);
+        
+        if ($remote_json) {
+            $plugins = json_decode($remote_json, true) ?: [];
+            $is_remote = true;
+        } 
+        // 2. Fallback ke Lokal jika remote gagal
+        elseif (file_exists($local_store_file)) {
             $plugins = json_decode(file_get_contents($local_store_file), true) ?: [];
         }
         
+        $source_label = $is_remote 
+            ? "<span style='color:green; font-weight:bold;'>Official Store (Live from GitHub)</span>" 
+            : "<span style='color:orange; font-weight:bold;'>Local Registry (Offline)</span>";
+
         $html = "<h2>Plugin Marketplace</h2>";
-        $html .= "<p>List of official plugins from <code>store.json</code>:</p>";
+        $html .= "<p>Source: {$source_label}</p>";
         
         if (empty($plugins)) {
-            $html .= "<p>No plugins found in store.json.</p>";
+            $html .= "<p>No plugins found in registry.</p>";
         } else {
             $html .= "<table><thead><tr><th>Plugin Name</th><th>Description</th><th>Action</th></tr></thead><tbody>";
             foreach ($plugins as $plugin) {
+                $installed = is_dir(FST_ROOT_DIR . '/fst-plugins/' . ($plugin['id'] ?? '')) || file_exists(FST_ROOT_DIR . '/fst-plugins/' . ($plugin['id'] ?? '') . '.php');
+                $btn_text = $installed ? 'Re-install' : 'Install';
+                $btn_style = $installed ? 'background: #6c757d;' : 'background: #28a745;';
+                
                 $html .= "<tr>";
-                $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong></td>";
+                $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong><br><small style='color:#666;'>ID: " . htmlspecialchars($plugin['id'] ?? '-') . "</small></td>";
                 $html .= "<td>" . htmlspecialchars($plugin['description'] ?? '') . "</td>";
-                $html .= "<td><button onclick=\"alert('Auto-install feature coming soon!')\">Install</button></td>";
+                
+                $install_url = $admin_base . '/plugins/install';
+                $plugin_id = htmlspecialchars($plugin['id'] ?? '');
+                $plugin_url = htmlspecialchars($plugin['url'] ?? '');
+                $csrf_token = fst_csrf_token();
+
+                $html .= "<td>
+                    <form action='{$install_url}' method='POST' style='display:inline;'>
+                        <input type='hidden' name='_token' value='{$csrf_token}'>
+                        <input type='hidden' name='id' value='{$plugin_id}'>
+                        <input type='hidden' name='url' value='{$plugin_url}'>
+                        <button type='submit' style='{$btn_style}'>{$btn_text}</button>
+                    </form>
+                </td>";
                 $html .= "</tr>";
             }
             $html .= "</tbody></table>";
         }
         
         fst_admin_render_page('Plugins', $html);
+    }
+
+    function fst_admin_install_plugin() {
+        fst_admin_check_auth();
+        fst_csrf_check();
+        global $fst_config;
+        $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
+
+        $id = $_POST['id'] ?? '';
+        $url = $_POST['url'] ?? '';
+
+        if (empty($id) || empty($url)) {
+            fst_flash_set('error_message', 'Invalid plugin data.');
+            fst_redirect($admin_base . '/plugins');
+        }
+
+        // Pastikan direktori plugin ada
+        $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
+        if (!is_dir($plugin_dir)) {
+            if (!mkdir($plugin_dir, 0755, true)) {
+                fst_flash_set('error_message', 'Failed to create fst-plugins directory.');
+                fst_redirect($admin_base . '/plugins');
+            }
+        }
+
+        // Download file
+        $ctx = stream_context_create(['http' => ['timeout' => 10]]);
+        $content = @file_get_contents($url, false, $ctx);
+
+        if ($content === false) {
+            fst_flash_set('error_message', 'Failed to download plugin from: ' . htmlspecialchars($url));
+        } else {
+            $filename = $plugin_dir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $id) . '.php';
+            if (file_put_contents($filename, $content) !== false) {
+                fst_flash_set('success_message', 'Plugin <strong>' . htmlspecialchars($id) . '</strong> installed successfully!');
+            } else {
+                fst_flash_set('error_message', 'Failed to save plugin file. Check permissions.');
+            }
+        }
+
+        fst_redirect($admin_base . '/plugins');
     }
 
 }
