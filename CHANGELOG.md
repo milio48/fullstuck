@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core**: Added `fst-plugins/` Auto-Discovery for modular framework extension.
 - **SPA**: Implemented Virtual Output Buffer and HTML Clipping for Zero-Config SPA navigation.
 - **Admin**: Added **Plugin Marketplace** with remote fetching from GitHub `store.json`.
+- **Admin**: Added **Enable/Disable** (via renaming) and **Uninstall** features to the Plugin Manager.
 - **Admin**: Implemented **One-Click Plugin Installer** for direct PHP plugin deployment.
 - **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote GitHub sync.
 - **Admin**: Added `fst_check_integrity` and `fst_config` to the Project Scan registry.

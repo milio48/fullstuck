@@ -21,6 +21,8 @@ if (fst_is_dev()) {
     fst_get($admin_base . '/integrity', 'fst_admin_show_integrity');
     fst_get($admin_base . '/plugins', 'fst_admin_show_plugins');
     fst_post($admin_base . '/plugins/install', 'fst_admin_install_plugin');
+    fst_post($admin_base . '/plugins/toggle', 'fst_admin_toggle_plugin');
+    fst_post($admin_base . '/plugins/uninstall', 'fst_admin_uninstall_plugin');
 }
 
 
@@ -443,7 +445,7 @@ HTML;
                 'fst_admin_show_config', 'fst_admin_save_config', 'fst_admin_show_routes',
                 'fst_get_server_info', 'fst_admin_show_server_info', 'fst_admin_show_scan_page',
                 'fst_admin_run_scan', 'fst_check_integrity', 'fst_admin_show_integrity', 'fst_admin_show_plugins',
-                'fst_admin_install_plugin'
+                'fst_admin_install_plugin', 'fst_admin_toggle_plugin', 'fst_admin_uninstall_plugin'
             ]
         ];
 
@@ -568,55 +570,97 @@ HTML;
         fst_admin_check_auth();
         global $fst_config;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
+        $csrf = fst_csrf_field();
         
-        $remote_store_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/store.json";
-        $local_store_file = FST_ROOT_DIR . '/store.json';
-        $plugins = [];
-        $is_remote = false;
-
-        // 1. Coba ambil dari Remote (GitHub)
-        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
-        $remote_json = @file_get_contents($remote_store_url, false, $ctx);
-        
-        if ($remote_json) {
-            $plugins = json_decode($remote_json, true) ?: [];
-            $is_remote = true;
-        } 
-        // 2. Fallback ke Lokal jika remote gagal
-        elseif (file_exists($local_store_file)) {
-            $plugins = json_decode(file_get_contents($local_store_file), true) ?: [];
+        // 1. Scan Local Plugins
+        $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
+        $local_plugins = [];
+        if (is_dir($plugin_dir)) {
+            $files = scandir($plugin_dir);
+            foreach ($files as $file) {
+                if ($file === '.' || $file === '..') continue;
+                $is_disabled = str_ends_with($file, '.disabled');
+                if (str_ends_with($file, '.php') || $is_disabled) {
+                    $local_plugins[] = [
+                        'filename' => $file,
+                        'name' => str_replace(['.php', '.disabled'], '', $file),
+                        'active' => !$is_disabled
+                    ];
+                }
+            }
         }
-        
-        $source_label = $is_remote 
-            ? "<span style='color:green; font-weight:bold;'>Official Store (Live from GitHub)</span>" 
-            : "<span style='color:orange; font-weight:bold;'>Local Registry (Offline)</span>";
 
-        $html = "<h2>Plugin Marketplace</h2>";
-        $html .= "<p>Source: {$source_label}</p>";
-        
-        if (empty($plugins)) {
-            $html .= "<p>No plugins found in registry.</p>";
+        $html = "<h2>Installed Plugins</h2>";
+        if (empty($local_plugins)) {
+            $html .= "<p>No plugins installed yet.</p>";
         } else {
-            $html .= "<table><thead><tr><th>Plugin Name</th><th>Description</th><th>Action</th></tr></thead><tbody>";
-            foreach ($plugins as $plugin) {
-                $installed = is_dir(FST_ROOT_DIR . '/fst-plugins/' . ($plugin['id'] ?? '')) || file_exists(FST_ROOT_DIR . '/fst-plugins/' . ($plugin['id'] ?? '') . '.php');
-                $btn_text = $installed ? 'Re-install' : 'Install';
-                $btn_style = $installed ? 'background: #6c757d;' : 'background: #28a745;';
+            $html .= "<table><thead><tr><th>Plugin Name</th><th>Status</th><th>Actions</th></tr></thead><tbody>";
+            foreach ($local_plugins as $p) {
+                $status = $p['active'] ? '<span style="color:green;">✔ Active</span>' : '<span style="color:gray;">○ Inactive</span>';
+                $toggle_text = $p['active'] ? 'Disable' : 'Enable';
+                $toggle_style = $p['active'] ? 'background:#6c757d;' : 'background:#28a745;';
                 
                 $html .= "<tr>";
-                $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong><br><small style='color:#666;'>ID: " . htmlspecialchars($plugin['id'] ?? '-') . "</small></td>";
-                $html .= "<td>" . htmlspecialchars($plugin['description'] ?? '') . "</td>";
-                
-                $install_url = $admin_base . '/plugins/install';
-                $plugin_id = htmlspecialchars($plugin['id'] ?? '');
-                $plugin_url = htmlspecialchars($plugin['url'] ?? '');
-                $csrf_token = fst_csrf_token();
-
+                $html .= "<td><strong>" . htmlspecialchars($p['name']) . "</strong><br><small style='color:#666;'>" . htmlspecialchars($p['filename']) . "</small></td>";
+                $html .= "<td>{$status}</td>";
                 $html .= "<td>
-                    <form action='{$install_url}' method='POST' style='display:inline;'>
-                        <input type='hidden' name='_token' value='{$csrf_token}'>
-                        <input type='hidden' name='id' value='{$plugin_id}'>
-                        <input type='hidden' name='url' value='{$plugin_url}'>
+                    <form action='{$admin_base}/plugins/toggle' method='POST' style='display:inline;'>
+                        {$csrf}
+                        <input type='hidden' name='filename' value='" . htmlspecialchars($p['filename']) . "'>
+                        <button type='submit' style='{$toggle_style}'>{$toggle_text}</button>
+                    </form>
+                    <form action='{$admin_base}/plugins/uninstall' method='POST' style='display:inline;' onsubmit='return confirm(\"Are you sure you want to uninstall this plugin?\")'>
+                        {$csrf}
+                        <input type='hidden' name='filename' value='" . htmlspecialchars($p['filename']) . "'>
+                        <button type='submit' style='background:#dc3545;'>Uninstall</button>
+                    </form>
+                </td>";
+                $html .= "</tr>";
+            }
+            $html .= "</tbody></table>";
+        }
+
+        // 2. Marketplace
+        $remote_store_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/store.json";
+        $local_store_file = FST_ROOT_DIR . '/store.json';
+        $store_plugins = [];
+        $is_remote = false;
+
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_json = @file_get_contents($remote_store_url, false, $ctx);
+        if ($remote_json) {
+            $store_plugins = json_decode($remote_json, true) ?: [];
+            $is_remote = true;
+        } elseif (file_exists($local_store_file)) {
+            $store_plugins = json_decode(file_get_contents($local_store_file), true) ?: [];
+        }
+        
+        $source_label = $is_remote ? "<span style='color:green;'>GitHub Store</span>" : "<span style='color:orange;'>Local Registry</span>";
+
+        $html .= "<br><hr><h2>Plugin Store <small style='font-size:14px; font-weight:normal;'>({$source_label})</small></h2>";
+        
+        if (empty($store_plugins)) {
+            $html .= "<p>No plugins found in store.</p>";
+        } else {
+            $html .= "<table><thead><tr><th>Plugin Name</th><th>Description</th><th>Action</th></tr></thead><tbody>";
+            foreach ($store_plugins as $plugin) {
+                $id = $plugin['id'] ?? '';
+                $is_installed = false;
+                foreach ($local_plugins as $lp) {
+                    if ($lp['name'] === $id) { $is_installed = true; break; }
+                }
+                
+                $btn_text = $is_installed ? 'Re-install' : 'Install';
+                $btn_style = $is_installed ? 'background:#6c757d;' : 'background:#28a745;';
+                
+                $html .= "<tr>";
+                $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong><br><small style='color:#666;'>ID: " . htmlspecialchars($id) . "</small></td>";
+                $html .= "<td>" . htmlspecialchars($plugin['description'] ?? '') . "</td>";
+                $html .= "<td>
+                    <form action='{$admin_base}/plugins/install' method='POST' style='display:inline;'>
+                        {$csrf}
+                        <input type='hidden' name='id' value='" . htmlspecialchars($id) . "'>
+                        <input type='hidden' name='url' value='" . htmlspecialchars($plugin['url'] ?? '') . "'>
                         <button type='submit' style='{$btn_style}'>{$btn_text}</button>
                     </form>
                 </td>";
@@ -625,7 +669,48 @@ HTML;
             $html .= "</tbody></table>";
         }
         
-        fst_admin_render_page('Plugins', $html);
+        fst_admin_render_page('Plugin Manager', $html);
+    }
+
+    function fst_admin_toggle_plugin() {
+        fst_admin_check_auth();
+        fst_csrf_check();
+        global $fst_config;
+        $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
+
+        $filename = basename($_POST['filename'] ?? '');
+        $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
+        $path = $plugin_dir . '/' . $filename;
+
+        if (!empty($filename) && file_exists($path)) {
+            if (str_ends_with($filename, '.disabled')) {
+                $new_path = str_replace('.disabled', '', $path);
+                rename($path, $new_path);
+                fst_flash_set('success_message', 'Plugin enabled.');
+            } else {
+                $new_path = $path . '.disabled';
+                rename($path, $new_path);
+                fst_flash_set('success_message', 'Plugin disabled.');
+            }
+        }
+        fst_redirect($admin_base . '/plugins');
+    }
+
+    function fst_admin_uninstall_plugin() {
+        fst_admin_check_auth();
+        fst_csrf_check();
+        global $fst_config;
+        $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
+
+        $filename = basename($_POST['filename'] ?? '');
+        $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
+        $path = $plugin_dir . '/' . $filename;
+
+        if (!empty($filename) && file_exists($path)) {
+            unlink($path);
+            fst_flash_set('success_message', 'Plugin uninstalled successfully.');
+        }
+        fst_redirect($admin_base . '/plugins');
     }
 
     function fst_admin_install_plugin() {
