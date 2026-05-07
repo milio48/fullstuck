@@ -15,7 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin**: Implemented **One-Click Plugin Installer** for direct PHP plugin deployment.
 - **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote GitHub sync.
 - **Admin**: Updated **Scan Project** to include new SPA and Admin helper functions.
-- **Documentation**: Added API references for `fst_is_spa()` and `fst_spa_target()`.
+### Fixed
+- **Core**: Routes file missing now only triggers 500 error in production; in development, it allows the framework to boot so the Admin Dashboard can be used to troubleshoot.
 
 ## [v0.1.0] - 2026-05-06
 - Initial release of FullStuck.php "Two Worlds" architecture.
