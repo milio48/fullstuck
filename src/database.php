@@ -20,6 +20,11 @@ try {
                     $dsn = "sqlite:" . $path;
                     $fst_pdo = new PDO($dsn, null, null, $options);
                     break;
+                case 'pgsql':
+                    $port = $db_config['port'] ?? '5432';
+                    $dsn = "pgsql:host={$db_config['host']};port={$port};dbname={$db_config['dbname']}";
+                    $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
+                    break;
                 default:
                     throw new Exception("Unsupported database driver '{$driver}' in fullstuck.json.");
             }
@@ -31,6 +36,13 @@ try {
 } catch (Exception $e) {
     if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
     else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
+}
+
+function fst_db_quote_ident($name) {
+    global $fst_config;
+    $driver = $fst_config['database']['driver'] ?? 'mysql';
+    $q = ($driver === 'pgsql') ? '"' : '`';
+    return $q . str_replace($q, $q . $q, $name) . $q;
 }
 
 function fst_db($mode, $sql, $params = []) {
@@ -52,12 +64,13 @@ function fst_db($mode, $sql, $params = []) {
 
 function fst_db_select($table, $conditions = [], $options = []) {
     $columns = $options['select'] ?? '*';
-    $sql = "SELECT {$columns} FROM `{$table}`";
+    $t = fst_db_quote_ident($table);
+    $sql = "SELECT {$columns} FROM {$t}";
     $params = [];
     if (!empty($conditions)) {
         $where = [];
         foreach ($conditions as $k => $v) {
-            $where[] = "`{$k}` = ?";
+            $where[] = fst_db_quote_ident($k) . " = ?";
             $params[] = $v;
         }
         $sql .= " WHERE " . implode(" AND ", $where);
@@ -72,26 +85,28 @@ function fst_db_select($table, $conditions = [], $options = []) {
 
 function fst_db_insert($table, $data) {
     if (empty($data)) return false;
-    $columns = array_keys($data);
+    $t = fst_db_quote_ident($table);
+    $columns = array_map('fst_db_quote_ident', array_keys($data));
     $placeholders = array_fill(0, count($data), '?');
-    $sql = "INSERT INTO `{$table}` (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $placeholders) . ")";
+    $sql = "INSERT INTO {$t} (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
     return fst_db('EXEC', $sql, array_values($data));
 }
 
 function fst_db_update($table, $data, $conditions = []) {
     if (empty($data)) return false;
+    $t = fst_db_quote_ident($table);
     $set = [];
     $params = [];
     foreach ($data as $k => $v) {
-        $set[] = "`{$k}` = ?";
+        $set[] = fst_db_quote_ident($k) . " = ?";
         $params[] = $v;
     }
-    $sql = "UPDATE `{$table}` SET " . implode(", ", $set);
+    $sql = "UPDATE {$t} SET " . implode(", ", $set);
     
     if (!empty($conditions)) {
         $where = [];
         foreach ($conditions as $k => $v) {
-            $where[] = "`{$k}` = ?";
+            $where[] = fst_db_quote_ident($k) . " = ?";
             $params[] = $v;
         }
         $sql .= " WHERE " . implode(" AND ", $where);
@@ -100,14 +115,15 @@ function fst_db_update($table, $data, $conditions = []) {
 }
 
 function fst_db_delete($table, $conditions) {
-    if (empty($conditions)) return false; // Prevent accidental full table delete
+    if (empty($conditions)) return false; 
+    $t = fst_db_quote_ident($table);
     $where = [];
     $params = [];
     foreach ($conditions as $k => $v) {
-        $where[] = "`{$k}` = ?";
+        $where[] = fst_db_quote_ident($k) . " = ?";
         $params[] = $v;
     }
-    $sql = "DELETE FROM `{$table}` WHERE " . implode(" AND ", $where);
+    $sql = "DELETE FROM {$t} WHERE " . implode(" AND ", $where);
     return fst_db('EXEC', $sql, $params);
 }
 ?>

@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 4d0d242ebcdc7781b91e89370ab85edaccf75cb37e281bb2a86271e76370b285
+ * 💡 Version: 0.1.0 | FST_HASH: 7c6dfdf9dfbc5ddf0616933fb3d35a95e3e7f8f3256eed37f3f684b0439dbf88
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', function(e) { const link = e.target.closest(\'a\'); if (!link || !link.href) return; if (link.target === \'_blank\' || link.hasAttribute(\'download\')) return; if (link.hostname !== window.location.hostname) return; if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); fstNavigate(link.href); }); window.addEventListener(\'popstate\', function(e) { fstNavigate(window.location.href, false); }); async function fstNavigate(url, pushState = true) { try { const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const headers = {}; headers[reqHeader] = \'true\'; headers[targetHeader] = \'body\'; // Default target const response = await fetch(url, { headers: headers }); if (!response.ok) { window.location.href = url; // fallback return; } const html = await response.text(); document.body.innerHTML = html; if (pushState) { window.history.pushState({}, \'\', url); } // Dispatch fst:load event for plugins/scripts to re-initialize document.dispatchEvent(new Event(\'fst:load\')); // Re-execute scripts inside body const scripts = document.body.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); } catch (err) { window.location.href = url; // fallback } } // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
 
@@ -203,6 +203,11 @@ try {
                     $dsn = "sqlite:" . $path;
                     $fst_pdo = new PDO($dsn, null, null, $options);
                     break;
+                case 'pgsql':
+                    $port = $db_config['port'] ?? '5432';
+                    $dsn = "pgsql:host={$db_config['host']};port={$port};dbname={$db_config['dbname']}";
+                    $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
+                    break;
                 default:
                     throw new Exception("Unsupported database driver '{$driver}' in fullstuck.json.");
             }
@@ -214,6 +219,13 @@ try {
 } catch (Exception $e) {
     if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
     else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
+}
+
+function fst_db_quote_ident($name) {
+    global $fst_config;
+    $driver = $fst_config['database']['driver'] ?? 'mysql';
+    $q = ($driver === 'pgsql') ? '"' : '`';
+    return $q . str_replace($q, $q . $q, $name) . $q;
 }
 
 function fst_db($mode, $sql, $params = []) {
@@ -235,12 +247,13 @@ function fst_db($mode, $sql, $params = []) {
 
 function fst_db_select($table, $conditions = [], $options = []) {
     $columns = $options['select'] ?? '*';
-    $sql = "SELECT {$columns} FROM `{$table}`";
+    $t = fst_db_quote_ident($table);
+    $sql = "SELECT {$columns} FROM {$t}";
     $params = [];
     if (!empty($conditions)) {
         $where = [];
         foreach ($conditions as $k => $v) {
-            $where[] = "`{$k}` = ?";
+            $where[] = fst_db_quote_ident($k) . " = ?";
             $params[] = $v;
         }
         $sql .= " WHERE " . implode(" AND ", $where);
@@ -255,26 +268,28 @@ function fst_db_select($table, $conditions = [], $options = []) {
 
 function fst_db_insert($table, $data) {
     if (empty($data)) return false;
-    $columns = array_keys($data);
+    $t = fst_db_quote_ident($table);
+    $columns = array_map('fst_db_quote_ident', array_keys($data));
     $placeholders = array_fill(0, count($data), '?');
-    $sql = "INSERT INTO `{$table}` (`" . implode("`, `", $columns) . "`) VALUES (" . implode(", ", $placeholders) . ")";
+    $sql = "INSERT INTO {$t} (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
     return fst_db('EXEC', $sql, array_values($data));
 }
 
 function fst_db_update($table, $data, $conditions = []) {
     if (empty($data)) return false;
+    $t = fst_db_quote_ident($table);
     $set = [];
     $params = [];
     foreach ($data as $k => $v) {
-        $set[] = "`{$k}` = ?";
+        $set[] = fst_db_quote_ident($k) . " = ?";
         $params[] = $v;
     }
-    $sql = "UPDATE `{$table}` SET " . implode(", ", $set);
+    $sql = "UPDATE {$t} SET " . implode(", ", $set);
     
     if (!empty($conditions)) {
         $where = [];
         foreach ($conditions as $k => $v) {
-            $where[] = "`{$k}` = ?";
+            $where[] = fst_db_quote_ident($k) . " = ?";
             $params[] = $v;
         }
         $sql .= " WHERE " . implode(" AND ", $where);
@@ -283,14 +298,15 @@ function fst_db_update($table, $data, $conditions = []) {
 }
 
 function fst_db_delete($table, $conditions) {
-    if (empty($conditions)) return false; // Prevent accidental full table delete
+    if (empty($conditions)) return false; 
+    $t = fst_db_quote_ident($table);
     $where = [];
     $params = [];
     foreach ($conditions as $k => $v) {
-        $where[] = "`{$k}` = ?";
+        $where[] = fst_db_quote_ident($k) . " = ?";
         $params[] = $v;
     }
-    $sql = "DELETE FROM `{$table}` WHERE " . implode(" AND ", $where);
+    $sql = "DELETE FROM {$t} WHERE " . implode(" AND ", $where);
     return fst_db('EXEC', $sql, $params);
 }
 
