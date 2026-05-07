@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Zero-Config SPA architecture (SSR-to-SPA mode).
+- **Core**: Added **Strict Route Detection** to prevent duplicate route definitions.
 - **Core**: Added **PostgreSQL** driver support via PDO and cross-database identifier quoting.
 - **Core**: Added `fst-plugins/` Auto-Discovery for modular framework extension.
 - **SPA**: Implemented Virtual Output Buffer and HTML Clipping for Zero-Config SPA navigation.

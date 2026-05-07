@@ -62,6 +62,13 @@ function fst_route($method, $path, $callback, $middleware = []) {
 
     $final_pattern = '#^' . str_replace('/', '\/', $final_pattern) . '$#';
 
+    // Strict Mode: Detect Duplicates
+    foreach ($fst_routes as $existing) {
+        if ($existing[0] === $method && $existing[3] === $full_original_path) {
+            fst_abort(500, "Duplicate route detected: [{$method}] {$full_original_path}. Each route must be unique.");
+        }
+    }
+
     if (!is_array($middleware)) $middleware = [$middleware];
     $combined_middleware = array_merge($fst_group_middleware ?? [], $middleware);
 
