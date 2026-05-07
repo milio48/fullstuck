@@ -419,7 +419,7 @@ HTML;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $function_groups = [
-            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_extract_html_tag'],
+            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_tag'],
             'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
             'Views' => [
                 'fst_view',
@@ -442,7 +442,7 @@ HTML;
                 'fst_admin_do_logout', 'fst_admin_render_page', 'fst_admin_show_monitor',
                 'fst_admin_show_config', 'fst_admin_save_config', 'fst_admin_show_routes',
                 'fst_get_server_info', 'fst_admin_show_server_info', 'fst_admin_show_scan_page',
-                'fst_admin_run_scan', 'fst_admin_show_integrity', 'fst_admin_show_plugins',
+                'fst_admin_run_scan', 'fst_check_integrity', 'fst_admin_show_integrity', 'fst_admin_show_plugins',
                 'fst_admin_install_plugin'
             ]
         ];

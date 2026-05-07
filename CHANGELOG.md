@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin**: Added **Plugin Marketplace** with remote fetching from GitHub `store.json`.
 - **Admin**: Implemented **One-Click Plugin Installer** for direct PHP plugin deployment.
 - **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote GitHub sync.
+- **Admin**: Added `fst_check_integrity` and `fst_config` to the Project Scan registry.
 - **Admin**: Updated **Scan Project** to include new SPA and Admin helper functions.
 ### Fixed
 - **Core**: Routes file missing now only triggers 500 error in production; in development, it allows the framework to boot so the Admin Dashboard can be used to troubleshoot.
