@@ -4,6 +4,9 @@
 $src_dir = __DIR__;
 $output_file = dirname(__DIR__) . '/fullstuck.php';
 
+define('FST_VERSION', '0.1.0');
+define('FST_DOCS_URL', 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v' . FST_VERSION . '.md');
+
 // Minify fst.js
 $fst_js_path = $src_dir . '/assets/fst.js';
 $fst_js_code = file_exists($fst_js_path) ? file_get_contents($fst_js_path) : '';
@@ -54,8 +57,8 @@ $output = "<?php\n";
 $output .= "/**\n";
 $output .= " * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework\n";
 $output .= " * 🔗 Repository: https://github.com/milio48/fullstuck\n";
-$output .= " * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md\n";
-$output .= " * 💡 Version: 0.1.0 | FST_HASH: {$fim_hash}\n";
+$output .= " * 📚 Raw Docs: " . FST_DOCS_URL . "\n";
+$output .= " * 💡 Version: " . FST_VERSION . " | FST_HASH: {$fim_hash}\n";
 $output .= " */\n";
 $output .= $compiled_code;
 
