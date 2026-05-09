@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin**: Added **Enable/Disable** (via renaming) and **Uninstall** features to the Plugin Manager.
 - **Admin**: Implemented **One-Click Plugin Installer** for direct PHP plugin deployment.
 - **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote GitHub sync.
+- **Admin**: Added **Update Checker** with remote version fetching and cached banner notifications in the System Monitor.
 - **Admin**: Added `fst_check_integrity` and `fst_config` to the Project Scan registry.
 - **Admin**: Updated **Scan Project** to include new SPA and Admin helper functions.
 ### Fixed
