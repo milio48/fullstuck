@@ -3,7 +3,7 @@ function fst_view($path, $data = []) { extract($data); require FST_ROOT_DIR . '/
 function fst_partial($path, $data = []) { fst_view($path, $data); }
 
 function fst_serve_static_file($file_path) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
     
     $mime_types = $fst_config['mime_types'] ?? [

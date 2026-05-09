@@ -1,6 +1,6 @@
 <?php
 function fst_dump(...$vars) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     if (!fst_is_dev()) {
         return;
     }

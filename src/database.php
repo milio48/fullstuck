@@ -1,5 +1,6 @@
 <?php
 try {
+    $fst_config = fst_app('config');
     if (!$fst_config) throw new Exception("Configuration not loaded.");
 
     $db_all_config = $fst_config['database'] ?? null;
@@ -28,6 +29,7 @@ try {
                 default:
                     throw new Exception("Unsupported database driver '{$driver}' in fullstuck.json.");
             }
+            fst_app('pdo', $fst_pdo);
         } catch (Exception $e) {
             if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
             else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
@@ -39,14 +41,14 @@ try {
 }
 
 function fst_db_quote_ident($name) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $driver = $fst_config['database']['driver'] ?? 'mysql';
     $q = ($driver === 'pgsql') ? '"' : '`';
     return $q . str_replace($q, $q . $q, $name) . $q;
 }
 
 function fst_db($mode, $sql, $params = []) {
-    global $fst_pdo;
+    $fst_pdo = fst_app('pdo');
 
     if ($fst_pdo === null) {
         fst_abort(500, "Database function fst_db() called, but no database is configured or connected. Check 'fullstuck.json'.");

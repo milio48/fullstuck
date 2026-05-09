@@ -1,6 +1,6 @@
 <?php
 function fst_abort($code, $message = '') {
-    global $fst_config;
+    $fst_config = fst_app('config');
     http_response_code($code);
     $handler_path = $fst_config['routing']['error_handlers'][$code] ?? null;
     if ($handler_path) {
@@ -26,7 +26,10 @@ HTML;
 }
 
 function fst_route($method, $path, $callback, $middleware = []) {
-    global $fst_routes, $fst_route_prefix, $fst_group_middleware, $fst_config;
+    $fst_config = fst_app('config');
+    $fst_routes = fst_app('routes');
+    $fst_route_prefix = fst_app('route_prefix');
+    $fst_group_middleware = fst_app('group_middleware');
     
     $full_original_path = $fst_route_prefix . $path;
     if ($full_original_path !== '/' && str_ends_with($full_original_path, '/')) {
@@ -73,6 +76,7 @@ function fst_route($method, $path, $callback, $middleware = []) {
     $combined_middleware = array_merge($fst_group_middleware ?? [], $middleware);
 
     $fst_routes[] = [$method, $final_pattern, $callback, $full_original_path, $combined_middleware];
+    fst_app('routes', $fst_routes);
 }
 
 function fst_get($path, $callback, $middleware = []) { fst_route('GET', $path, $callback, $middleware); }
@@ -83,23 +87,24 @@ function fst_delete($path, $callback, $middleware = []) { fst_route('DELETE', $p
 function fst_any($path, $callback, $middleware = []) { fst_route('ANY', $path, $callback, $middleware); }
 
 function fst_group($prefix, $callback, $middleware = []) {
-    global $fst_route_prefix, $fst_group_middleware;
-    $parent_prefix = $fst_route_prefix;
-    $parent_middleware = $fst_group_middleware ?? [];
+    $parent_prefix = fst_app('route_prefix');
+    $parent_middleware = fst_app('group_middleware') ?? [];
     
     $fst_route_prefix = rtrim($parent_prefix, '/') . '/' . trim($prefix, '/');
+    fst_app('route_prefix', $fst_route_prefix);
     
     if (!is_array($middleware)) $middleware = [$middleware];
     $fst_group_middleware = array_merge($parent_middleware, $middleware);
+    fst_app('group_middleware', $fst_group_middleware);
     
     call_user_func($callback);
     
-    $fst_route_prefix = $parent_prefix;
-    $fst_group_middleware = $parent_middleware;
+    fst_app('route_prefix', $parent_prefix);
+    fst_app('group_middleware', $parent_middleware);
 }
 
 function _fst_get_request_paths() {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $request_uri_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
     $base_path_config = $fst_config['routing']['base_path'] ?? '/';
     if ($base_path_config !== '/' && str_starts_with($request_uri_path, $base_path_config)) {
@@ -124,7 +129,7 @@ function _fst_is_protected_file($absolute_path) {
 }
 
 function _fst_serve_static_asset($request_uri_path, $absolute_path) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $public_folders = $fst_config['routing']['public_folders'] ?? [];
     foreach ($public_folders as $folder) {
         $clean_folder = trim($folder, '/');
@@ -140,7 +145,7 @@ function _fst_serve_static_asset($request_uri_path, $absolute_path) {
 }
 
 function _fst_match_static_routes() {
-    global $fst_routes, $fst_route_found;
+    $fst_routes = fst_app('routes');
     $uri = fst_uri();
     $method = fst_method();
     
@@ -151,21 +156,53 @@ function _fst_match_static_routes() {
         if (preg_match($pattern, $uri, $matches)) {
             array_shift($matches); // Remove the full match string
             
-            // Execute Middleware
             $middleware_list = $route[4] ?? [];
+
+            // 1. Definisikan INTI bawang (eksekusi callback rute utama)
+            $next = function() use ($callback, $matches) {
+                return call_user_func_array($callback, $matches);
+            };
+
+            // 2. Balik urutan middleware agar dibungkus rapi dari luar ke dalam
+            $middleware_list = array_reverse($middleware_list);
+
+            // 3. Bungkus inti dengan lapisan middleware
             foreach ($middleware_list as $mw) {
                 if (is_callable($mw)) {
-                    $result = call_user_func($mw);
-                    // If middleware returns false, halt the route callback execution
-                    if ($result === false) {
-                        $fst_route_found = true; 
-                        return true; 
-                    }
+                    $current_next = $next;
+                    
+                    $next = function() use ($mw, $current_next) {
+                        $called = false;
+                        $next_wrapper = function() use ($current_next, &$called) {
+                            $called = true;
+                            return $current_next();
+                        };
+
+                        // Eksekusi middleware, kirim fungsi next ke dalamnya
+                        $result = call_user_func($mw, $next_wrapper);
+                        
+                        // --- MAGIC FULLSTUCK (BACKWARD COMPATIBILITY) ---
+                        // Jika user pakai gaya lama (me-return false untuk stop)
+                        if ($result === false) {
+                            return false;
+                        }
+                        
+                        // Jika user pakai gaya lama tapi mengizinkan lewat (lupa panggil $next)
+                        // Atau jika user tidak memanggil $next() dan tidak mengembalikan apapun
+                        if (!$called && $result === null) {
+                            return $current_next(); 
+                        }
+
+                        // Jika user pakai gaya baru (mengembalikan $next())
+                        return $result;
+                    };
                 }
             }
 
-            call_user_func_array($callback, $matches);
-            $fst_route_found = true; 
+            // 4. Jalankan seluruh bungkusan dari lapisan terluar
+            $next();
+            
+            fst_app('route_found', true); 
             return true; 
         }
     }
@@ -173,7 +210,7 @@ function _fst_match_static_routes() {
 }
 
 function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
-    global $fst_config, $fst_route_found;
+    $fst_config = fst_app('config');
     
     $routing_mode = $fst_config['routing']['mode'] ?? 'static';
     $allow_dynamic_fallback = $fst_config['routing']['static_config']['dynamic_fallback'] ?? false;
@@ -197,11 +234,11 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
         $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));
         if (in_array($ext, $allowed_exec_exts)) { 
             fst_serve_dynamic_file($absolute_path); 
-            $fst_route_found = true; 
+            fst_app('route_found', true); 
             return true; 
         } else { 
             fst_serve_static_file($absolute_path); 
-            $fst_route_found = true; 
+            fst_app('route_found', true); 
             return true; 
         }
     }
@@ -211,14 +248,14 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
                 $file_to_check = rtrim($absolute_path, '/') . '/' . $index_file;
                 if (is_file($file_to_check)) { 
                     fst_serve_dynamic_file($file_to_check); 
-                    $fst_route_found = true; 
+                    fst_app('route_found', true); 
                     return true; 
                 }
             }
             if ($directory_listing) { 
                 $relative_path_for_listing = trim($request_uri_path, '/'); 
                 fst_show_directory_listing($absolute_path, $relative_path_for_listing); 
-                $fst_route_found = true; 
+                fst_app('route_found', true); 
                 return true; 
             }
         } else { 
@@ -231,7 +268,7 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
             $file_to_check = $absolute_path . '.' . $ext;
             if (is_file($file_to_check)) { 
                 fst_serve_dynamic_file($file_to_check); 
-                $fst_route_found = true; 
+                fst_app('route_found', true); 
                 return true; 
             }
         }
@@ -241,7 +278,6 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
 }
 
 function fst_run() {
-    global $fst_route_found;
     
     ob_start();
     $handled = false;
@@ -277,7 +313,7 @@ function fst_run() {
     }
 
     // 6. Jika semua gagal, berikan 404
-    if (!$handled && !$fst_route_found) {
+    if (!$handled && !fst_app('route_found')) {
         fst_abort(404);
     }
     

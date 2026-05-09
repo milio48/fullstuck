@@ -12,20 +12,42 @@ if (!defined('FST_ROOT_DIR')) {
     define('FST_ROOT_DIR', realpath($root) ?: $root);
 }
 define('FST_CONFIG_FILE', FST_ROOT_DIR . DIRECTORY_SEPARATOR . 'fullstuck.json');
-
 if (!file_exists(FST_CONFIG_FILE)) {
     fst_handle_installation();
     die();
 }
 
+function fst_app($key = null, $value = null) {
+    static $state = [
+        'config' => null,
+        'pdo' => null,
+        'routes' => [],
+        'route_prefix' => '',
+        'group_middleware' => [],
+        'route_found' => false,
+    ];
+
+    if ($key === null) return $state;
+    if ($value !== null) $state[$key] = $value;
+    return $state[$key] ?? null;
+}
+
+function fst_is_safe_to_debug() {
+    $is_localhost = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']);
+    $is_admin_logged_in = !empty($_SESSION['fst_admin_logged_in']);
+    return $is_localhost || $is_admin_logged_in;
+}
+
 global $fst_config, $fst_pdo, $fst_routes, $fst_route_prefix, $fst_route_found;
 $config_content = @file_get_contents(FST_CONFIG_FILE);
-$fst_config = $config_content ? json_decode($config_content, true) : null;
+$decoded_config = $config_content ? json_decode($config_content, true) : null;
+fst_app('config', $decoded_config);
+$fst_config = $decoded_config; // Maintain backward compatibility for now
 $fst_routes = [];
 $fst_route_prefix = '';
 $fst_route_found = false;
 
-if ($fst_config === null && file_exists(FST_CONFIG_FILE)) {
+if ($decoded_config === null && file_exists(FST_CONFIG_FILE)) {
     if (function_exists('fst_abort')) fst_abort(500, "Failed to decode `fullstuck.json`. Check for syntax errors.");
     else die("Error: Failed to decode `fullstuck.json`. Check for syntax errors.");
 }
@@ -43,11 +65,10 @@ function _fst_error_handler($errno, $errstr, $errfile, $errline) {
 }
 
 function _fst_exception_handler($e) {
-    global $fst_config;
     http_response_code(500);
     
-    if (!fst_is_dev()) {
-        // Mode Production: Log pesan dan sembunyikan detail
+    if (!fst_is_dev() || !fst_is_safe_to_debug()) {
+        // Mode Production atau akses tidak aman: Log pesan dan sembunyikan detail
         error_log($e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
         if (function_exists('fst_abort')) { fst_abort(500, "Internal Server Error."); } 
         else { die("Internal Server Error."); }
@@ -126,12 +147,12 @@ set_exception_handler('_fst_exception_handler');
 register_shutdown_function('_fst_fatal_error_handler');
 
 function fst_is_dev() {
-    global $fst_config;
+    $fst_config = fst_app('config');
     return ($fst_config['environment'] ?? 'production') === 'development';
 }
 
 function fst_config($key = null, $default = null) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     if ($key === null) return $fst_config;
     $keys = explode('.', $key);
     $val = $fst_config;

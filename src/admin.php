@@ -1,5 +1,6 @@
 <?php
 if (fst_is_dev()) {
+    $fst_config = fst_app('config');
     $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
     fst_get($admin_base . '/login', 'fst_admin_show_login');
@@ -29,7 +30,7 @@ if (fst_is_dev()) {
 if (fst_is_dev()) {
 
     function fst_admin_check_auth() {
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         if (empty($_SESSION['fst_admin_logged_in'])) {
             fst_flash_set('error_message', 'Please login to access the admin area.');
@@ -39,7 +40,7 @@ if (fst_is_dev()) {
 
     function fst_admin_show_login() {
         header('Content-Type: text/html; charset=UTF-8');
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $error = fst_flash_get('error_message');
         $error_html = $error ? "<p style='color:red;'>{$error}</p>" : '';
@@ -55,7 +56,7 @@ HTML;
     }
 
     function fst_admin_do_login() {
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         fst_csrf_check();
 
@@ -72,7 +73,7 @@ HTML;
     }
 
     function fst_admin_do_logout() {
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         unset($_SESSION['fst_admin_logged_in']);
         fst_flash_set('success_message', 'You have been logged out.');
@@ -81,7 +82,7 @@ HTML;
     
     function fst_admin_render_page($title, $content) {
          header('Content-Type: text/html; charset=UTF-8');
-         global $fst_config;
+         $fst_config = fst_app('config');
          $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
          $success_msg = fst_flash_get('success_message');
          $error_msg = fst_flash_get('error_message');
@@ -170,7 +171,8 @@ HTML;
 
     function fst_admin_show_monitor() {
         fst_admin_check_auth();
-        global $fst_config, $fst_pdo;
+        $fst_config = fst_app('config');
+        $fst_pdo = fst_app('pdo');
 
         $update_banner = '';
         $remote_data = fst_admin_get_remote_info();
@@ -298,7 +300,7 @@ HTML;
 
     function fst_admin_show_config() {
         fst_admin_check_auth();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $csrf = fst_csrf_field();
         
@@ -319,7 +321,7 @@ HTML;
     function fst_admin_save_config() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $new_content = $_POST['config_content'] ?? '';
@@ -339,7 +341,9 @@ HTML;
     
      function fst_admin_show_routes() {
         fst_admin_check_auth();
-        global $fst_routes, $fst_config, $fst_route_prefix;
+        $fst_routes = fst_app('routes');
+        $fst_config = fst_app('config');
+        $fst_route_prefix = fst_app('route_prefix');
         
         $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
         $host = $_SERVER['HTTP_HOST'];
@@ -405,7 +409,7 @@ HTML;
 
     function fst_admin_show_scan_page() {
         fst_admin_check_auth();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $csrf = fst_csrf_field();
         
@@ -457,11 +461,11 @@ HTML;
     function fst_admin_run_scan() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $function_groups = [
-            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_tag'],
+            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_tag', 'fst_app'],
             'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
             'Views' => [
                 'fst_view',
@@ -474,7 +478,7 @@ HTML;
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
             'Response' => ['fst_json', 'fst_text', 'fst_redirect', 'fst_status_code'],
             'Session' => ['fst_session_set', 'fst_session_get', 'fst_session_forget', 'fst_flash_set', 'fst_flash_has', 'fst_flash_get'],
-            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check', 'fst_escape', 'e'],
+            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check', 'fst_escape', 'e', 'fst_is_safe_to_debug'],
             'Upload' => ['fst_upload'],
             'Validation' => ['fst_validate'],
             'Debug' => ['fst_dump', 'fst_dd'],
@@ -602,7 +606,7 @@ HTML;
 
     function fst_admin_show_plugins() {
         fst_admin_check_auth();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $csrf = fst_csrf_field();
         
@@ -709,7 +713,7 @@ HTML;
     function fst_admin_toggle_plugin() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $filename = basename($_POST['filename'] ?? '');
@@ -733,7 +737,7 @@ HTML;
     function fst_admin_uninstall_plugin() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $filename = basename($_POST['filename'] ?? '');
@@ -750,7 +754,7 @@ HTML;
     function fst_admin_install_plugin() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $id = $_POST['id'] ?? '';

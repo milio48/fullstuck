@@ -1,6 +1,6 @@
 <?php
 function fst_uri() {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
     $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
     if ($base_path !== '/' && str_starts_with($uri, $base_path)) {
@@ -35,7 +35,7 @@ function e($str) { return fst_escape($str); }
 function fst_json($data, $status = 200) { fst_status_code($status); header('Content-Type: application/json'); echo json_encode($data); die(); }
 function fst_text($string, $status = 200) { fst_status_code($status); header('Content-Type: text/plain'); echo $string; die(); }
 function fst_redirect($url, $code = 302) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
     if (!preg_match('/^(http:\/\/|https:\/\/|\/\/)/', $url)) {
         $url = rtrim($base_path, '/') . '/' . ltrim($url, '/');

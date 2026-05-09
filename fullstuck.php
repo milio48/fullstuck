@@ -3,9 +3,9 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: e85451ca0117e7d86eb2c8b665c13d37551a00f165caf7202ce2a34c840b3e33
+ * 💡 Version: 0.1.0 | FST_HASH: ec9637b42cf5952aae2b05a40e7a2131fadab2d94764667f18383c1d73de613e
  */
-define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', function(e) { const link = e.target.closest(\'a\'); if (!link || !link.href) return; if (link.target === \'_blank\' || link.hasAttribute(\'download\')) return; if (link.hostname !== window.location.hostname) return; if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); fstNavigate(link.href); }); window.addEventListener(\'popstate\', function(e) { fstNavigate(window.location.href, false); }); async function fstNavigate(url, pushState = true) { try { const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const headers = {}; headers[reqHeader] = \'true\'; headers[targetHeader] = \'body\'; // Default target const response = await fetch(url, { headers: headers }); if (!response.ok) { window.location.href = url; // fallback return; } const html = await response.text(); document.body.innerHTML = html; if (pushState) { window.history.pushState({}, \'\', url); } // Dispatch fst:load event for plugins/scripts to re-initialize document.dispatchEvent(new Event(\'fst:load\')); // Re-execute scripts inside body const scripts = document.body.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); } catch (err) { window.location.href = url; // fallback } } // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
+define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', function(e) { // 1. Hargai jika library JS lain (Vue/Alpine) sudah mencegah event ini if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href) return; // 2. Berikan opsi opt-out manual melalui class atau attribute if (link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\')) return; if (link.target === \'_blank\' || link.hasAttribute(\'download\')) return; if (link.hostname !== window.location.hostname) return; if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); fstNavigate(link.href); }); window.addEventListener(\'popstate\', function(e) { fstNavigate(window.location.href, false); }); async function fstNavigate(url, pushState = true) { try { const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const headers = {}; headers[reqHeader] = \'true\'; headers[targetHeader] = \'body\'; // Default target const response = await fetch(url, { headers: headers }); if (!response.ok) { window.location.href = url; // fallback return; } const html = await response.text(); document.body.innerHTML = html; if (pushState) { window.history.pushState({}, \'\', url); } // Dispatch fst:load event for plugins/scripts to re-initialize document.dispatchEvent(new Event(\'fst:load\')); // Re-execute scripts inside body const scripts = document.body.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); } catch (err) { window.location.href = url; // fallback } } // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
 
 
 // FILE: core.php
@@ -22,20 +22,42 @@ if (!defined('FST_ROOT_DIR')) {
     define('FST_ROOT_DIR', realpath($root) ?: $root);
 }
 define('FST_CONFIG_FILE', FST_ROOT_DIR . DIRECTORY_SEPARATOR . 'fullstuck.json');
-
 if (!file_exists(FST_CONFIG_FILE)) {
     fst_handle_installation();
     die();
 }
 
+function fst_app($key = null, $value = null) {
+    static $state = [
+        'config' => null,
+        'pdo' => null,
+        'routes' => [],
+        'route_prefix' => '',
+        'group_middleware' => [],
+        'route_found' => false,
+    ];
+
+    if ($key === null) return $state;
+    if ($value !== null) $state[$key] = $value;
+    return $state[$key] ?? null;
+}
+
+function fst_is_safe_to_debug() {
+    $is_localhost = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']);
+    $is_admin_logged_in = !empty($_SESSION['fst_admin_logged_in']);
+    return $is_localhost || $is_admin_logged_in;
+}
+
 global $fst_config, $fst_pdo, $fst_routes, $fst_route_prefix, $fst_route_found;
 $config_content = @file_get_contents(FST_CONFIG_FILE);
-$fst_config = $config_content ? json_decode($config_content, true) : null;
+$decoded_config = $config_content ? json_decode($config_content, true) : null;
+fst_app('config', $decoded_config);
+$fst_config = $decoded_config; // Maintain backward compatibility for now
 $fst_routes = [];
 $fst_route_prefix = '';
 $fst_route_found = false;
 
-if ($fst_config === null && file_exists(FST_CONFIG_FILE)) {
+if ($decoded_config === null && file_exists(FST_CONFIG_FILE)) {
     if (function_exists('fst_abort')) fst_abort(500, "Failed to decode `fullstuck.json`. Check for syntax errors.");
     else die("Error: Failed to decode `fullstuck.json`. Check for syntax errors.");
 }
@@ -53,10 +75,9 @@ function _fst_error_handler($errno, $errstr, $errfile, $errline) {
 }
 
 function _fst_exception_handler($e) {
-    global $fst_config;
     http_response_code(500);
     
-    if (!fst_is_dev()) {
+    if (!fst_is_dev() || !fst_is_safe_to_debug()) {
 
         error_log($e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
         if (function_exists('fst_abort')) { fst_abort(500, "Internal Server Error."); } 
@@ -135,12 +156,12 @@ set_exception_handler('_fst_exception_handler');
 register_shutdown_function('_fst_fatal_error_handler');
 
 function fst_is_dev() {
-    global $fst_config;
+    $fst_config = fst_app('config');
     return ($fst_config['environment'] ?? 'production') === 'development';
 }
 
 function fst_config($key = null, $default = null) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     if ($key === null) return $fst_config;
     $keys = explode('.', $key);
     $val = $fst_config;
@@ -185,6 +206,7 @@ function fst_extract_html_tag($html, $tag = 'body') {
 
 // FILE: database.php
 try {
+    $fst_config = fst_app('config');
     if (!$fst_config) throw new Exception("Configuration not loaded.");
 
     $db_all_config = $fst_config['database'] ?? null;
@@ -213,6 +235,7 @@ try {
                 default:
                     throw new Exception("Unsupported database driver '{$driver}' in fullstuck.json.");
             }
+            fst_app('pdo', $fst_pdo);
         } catch (Exception $e) {
             if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
             else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
@@ -224,14 +247,14 @@ try {
 }
 
 function fst_db_quote_ident($name) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $driver = $fst_config['database']['driver'] ?? 'mysql';
     $q = ($driver === 'pgsql') ? '"' : '`';
     return $q . str_replace($q, $q . $q, $name) . $q;
 }
 
 function fst_db($mode, $sql, $params = []) {
-    global $fst_pdo;
+    $fst_pdo = fst_app('pdo');
 
     if ($fst_pdo === null) {
         fst_abort(500, "Database function fst_db() called, but no database is configured or connected. Check 'fullstuck.json'.");
@@ -314,7 +337,7 @@ function fst_db_delete($table, $conditions) {
 
 // FILE: router.php
 function fst_abort($code, $message = '') {
-    global $fst_config;
+    $fst_config = fst_app('config');
     http_response_code($code);
     $handler_path = $fst_config['routing']['error_handlers'][$code] ?? null;
     if ($handler_path) {
@@ -340,7 +363,10 @@ HTML;
 }
 
 function fst_route($method, $path, $callback, $middleware = []) {
-    global $fst_routes, $fst_route_prefix, $fst_group_middleware, $fst_config;
+    $fst_config = fst_app('config');
+    $fst_routes = fst_app('routes');
+    $fst_route_prefix = fst_app('route_prefix');
+    $fst_group_middleware = fst_app('group_middleware');
     
     $full_original_path = $fst_route_prefix . $path;
     if ($full_original_path !== '/' && str_ends_with($full_original_path, '/')) {
@@ -386,6 +412,7 @@ function fst_route($method, $path, $callback, $middleware = []) {
     $combined_middleware = array_merge($fst_group_middleware ?? [], $middleware);
 
     $fst_routes[] = [$method, $final_pattern, $callback, $full_original_path, $combined_middleware];
+    fst_app('routes', $fst_routes);
 }
 
 function fst_get($path, $callback, $middleware = []) { fst_route('GET', $path, $callback, $middleware); }
@@ -396,23 +423,24 @@ function fst_delete($path, $callback, $middleware = []) { fst_route('DELETE', $p
 function fst_any($path, $callback, $middleware = []) { fst_route('ANY', $path, $callback, $middleware); }
 
 function fst_group($prefix, $callback, $middleware = []) {
-    global $fst_route_prefix, $fst_group_middleware;
-    $parent_prefix = $fst_route_prefix;
-    $parent_middleware = $fst_group_middleware ?? [];
+    $parent_prefix = fst_app('route_prefix');
+    $parent_middleware = fst_app('group_middleware') ?? [];
     
     $fst_route_prefix = rtrim($parent_prefix, '/') . '/' . trim($prefix, '/');
+    fst_app('route_prefix', $fst_route_prefix);
     
     if (!is_array($middleware)) $middleware = [$middleware];
     $fst_group_middleware = array_merge($parent_middleware, $middleware);
+    fst_app('group_middleware', $fst_group_middleware);
     
     call_user_func($callback);
     
-    $fst_route_prefix = $parent_prefix;
-    $fst_group_middleware = $parent_middleware;
+    fst_app('route_prefix', $parent_prefix);
+    fst_app('group_middleware', $parent_middleware);
 }
 
 function _fst_get_request_paths() {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $request_uri_path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
     $base_path_config = $fst_config['routing']['base_path'] ?? '/';
     if ($base_path_config !== '/' && str_starts_with($request_uri_path, $base_path_config)) {
@@ -437,7 +465,7 @@ function _fst_is_protected_file($absolute_path) {
 }
 
 function _fst_serve_static_asset($request_uri_path, $absolute_path) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $public_folders = $fst_config['routing']['public_folders'] ?? [];
     foreach ($public_folders as $folder) {
         $clean_folder = trim($folder, '/');
@@ -453,7 +481,7 @@ function _fst_serve_static_asset($request_uri_path, $absolute_path) {
 }
 
 function _fst_match_static_routes() {
-    global $fst_routes, $fst_route_found;
+    $fst_routes = fst_app('routes');
     $uri = fst_uri();
     $method = fst_method();
     
@@ -463,21 +491,46 @@ function _fst_match_static_routes() {
         
         if (preg_match($pattern, $uri, $matches)) {
             array_shift($matches); // Remove the full match string
-
+            
             $middleware_list = $route[4] ?? [];
+
+            $next = function() use ($callback, $matches) {
+                return call_user_func_array($callback, $matches);
+            };
+
+            $middleware_list = array_reverse($middleware_list);
+
             foreach ($middleware_list as $mw) {
                 if (is_callable($mw)) {
-                    $result = call_user_func($mw);
+                    $current_next = $next;
+                    
+                    $next = function() use ($mw, $current_next) {
+                        $called = false;
+                        $next_wrapper = function() use ($current_next, &$called) {
+                            $called = true;
+                            return $current_next();
+                        };
 
-                    if ($result === false) {
-                        $fst_route_found = true; 
-                        return true; 
-                    }
+                        $result = call_user_func($mw, $next_wrapper);
+
+
+                        if ($result === false) {
+                            return false;
+                        }
+
+
+                        if (!$called && $result === null) {
+                            return $current_next(); 
+                        }
+
+                        return $result;
+                    };
                 }
             }
 
-            call_user_func_array($callback, $matches);
-            $fst_route_found = true; 
+            $next();
+            
+            fst_app('route_found', true); 
             return true; 
         }
     }
@@ -485,7 +538,7 @@ function _fst_match_static_routes() {
 }
 
 function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
-    global $fst_config, $fst_route_found;
+    $fst_config = fst_app('config');
     
     $routing_mode = $fst_config['routing']['mode'] ?? 'static';
     $allow_dynamic_fallback = $fst_config['routing']['static_config']['dynamic_fallback'] ?? false;
@@ -508,11 +561,11 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
         $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));
         if (in_array($ext, $allowed_exec_exts)) { 
             fst_serve_dynamic_file($absolute_path); 
-            $fst_route_found = true; 
+            fst_app('route_found', true); 
             return true; 
         } else { 
             fst_serve_static_file($absolute_path); 
-            $fst_route_found = true; 
+            fst_app('route_found', true); 
             return true; 
         }
     }
@@ -522,14 +575,14 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
                 $file_to_check = rtrim($absolute_path, '/') . '/' . $index_file;
                 if (is_file($file_to_check)) { 
                     fst_serve_dynamic_file($file_to_check); 
-                    $fst_route_found = true; 
+                    fst_app('route_found', true); 
                     return true; 
                 }
             }
             if ($directory_listing) { 
                 $relative_path_for_listing = trim($request_uri_path, '/'); 
                 fst_show_directory_listing($absolute_path, $relative_path_for_listing); 
-                $fst_route_found = true; 
+                fst_app('route_found', true); 
                 return true; 
             }
         } else { 
@@ -542,7 +595,7 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
             $file_to_check = $absolute_path . '.' . $ext;
             if (is_file($file_to_check)) { 
                 fst_serve_dynamic_file($file_to_check); 
-                $fst_route_found = true; 
+                fst_app('route_found', true); 
                 return true; 
             }
         }
@@ -552,7 +605,6 @@ function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
 }
 
 function fst_run() {
-    global $fst_route_found;
     
     ob_start();
     $handled = false;
@@ -585,7 +637,7 @@ function fst_run() {
         }
     }
 
-    if (!$handled && !$fst_route_found) {
+    if (!$handled && !fst_app('route_found')) {
         fst_abort(404);
     }
     
@@ -610,7 +662,7 @@ function fst_run() {
 
 // FILE: http.php
 function fst_uri() {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
     $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
     if ($base_path !== '/' && str_starts_with($uri, $base_path)) {
@@ -645,7 +697,7 @@ function e($str) { return fst_escape($str); }
 function fst_json($data, $status = 200) { fst_status_code($status); header('Content-Type: application/json'); echo json_encode($data); die(); }
 function fst_text($string, $status = 200) { fst_status_code($status); header('Content-Type: text/plain'); echo $string; die(); }
 function fst_redirect($url, $code = 302) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
     if (!preg_match('/^(http:\/\/|https:\/\/|\/\/)/', $url)) {
         $url = rtrim($base_path, '/') . '/' . ltrim($url, '/');
@@ -694,7 +746,7 @@ function fst_view($path, $data = []) { extract($data); require FST_ROOT_DIR . '/
 function fst_partial($path, $data = []) { fst_view($path, $data); }
 
 function fst_serve_static_file($file_path) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION));
     
     $mime_types = $fst_config['mime_types'] ?? [
@@ -749,7 +801,7 @@ function fst_show_directory_listing($dir_path, $uri_prefix) {
 
 // FILE: utility.php
 function fst_dump(...$vars) {
-    global $fst_config;
+    $fst_config = fst_app('config');
     if (!fst_is_dev()) {
         return;
     }
@@ -943,6 +995,7 @@ return $html;
 
 // FILE: admin.php
 if (fst_is_dev()) {
+    $fst_config = fst_app('config');
     $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
     fst_get($admin_base . '/login', 'fst_admin_show_login');
@@ -972,7 +1025,7 @@ if (fst_is_dev()) {
 if (fst_is_dev()) {
 
     function fst_admin_check_auth() {
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         if (empty($_SESSION['fst_admin_logged_in'])) {
             fst_flash_set('error_message', 'Please login to access the admin area.');
@@ -982,7 +1035,7 @@ if (fst_is_dev()) {
 
     function fst_admin_show_login() {
         header('Content-Type: text/html; charset=UTF-8');
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $error = fst_flash_get('error_message');
         $error_html = $error ? "<p style='color:red;'>{$error}</p>" : '';
@@ -998,7 +1051,7 @@ HTML;
     }
 
     function fst_admin_do_login() {
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         fst_csrf_check();
 
@@ -1015,7 +1068,7 @@ HTML;
     }
 
     function fst_admin_do_logout() {
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         unset($_SESSION['fst_admin_logged_in']);
         fst_flash_set('success_message', 'You have been logged out.');
@@ -1024,7 +1077,7 @@ HTML;
     
     function fst_admin_render_page($title, $content) {
          header('Content-Type: text/html; charset=UTF-8');
-         global $fst_config;
+         $fst_config = fst_app('config');
          $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
          $success_msg = fst_flash_get('success_message');
          $error_msg = fst_flash_get('error_message');
@@ -1113,7 +1166,8 @@ HTML;
 
     function fst_admin_show_monitor() {
         fst_admin_check_auth();
-        global $fst_config, $fst_pdo;
+        $fst_config = fst_app('config');
+        $fst_pdo = fst_app('pdo');
 
         $update_banner = '';
         $remote_data = fst_admin_get_remote_info();
@@ -1236,7 +1290,7 @@ HTML;
 
     function fst_admin_show_config() {
         fst_admin_check_auth();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $csrf = fst_csrf_field();
         
@@ -1257,7 +1311,7 @@ HTML;
     function fst_admin_save_config() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $new_content = $_POST['config_content'] ?? '';
@@ -1277,7 +1331,9 @@ HTML;
     
      function fst_admin_show_routes() {
         fst_admin_check_auth();
-        global $fst_routes, $fst_config, $fst_route_prefix;
+        $fst_routes = fst_app('routes');
+        $fst_config = fst_app('config');
+        $fst_route_prefix = fst_app('route_prefix');
         
         $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http";
         $host = $_SERVER['HTTP_HOST'];
@@ -1343,7 +1399,7 @@ HTML;
 
     function fst_admin_show_scan_page() {
         fst_admin_check_auth();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $csrf = fst_csrf_field();
         
@@ -1395,11 +1451,11 @@ HTML;
     function fst_admin_run_scan() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $function_groups = [
-            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_tag'],
+            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_tag', 'fst_app'],
             'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
             'Views' => [
                 'fst_view',
@@ -1412,7 +1468,7 @@ HTML;
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
             'Response' => ['fst_json', 'fst_text', 'fst_redirect', 'fst_status_code'],
             'Session' => ['fst_session_set', 'fst_session_get', 'fst_session_forget', 'fst_flash_set', 'fst_flash_has', 'fst_flash_get'],
-            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check', 'fst_escape', 'e'],
+            'Security' => ['fst_csrf_token', 'fst_csrf_field', 'fst_csrf_check', 'fst_escape', 'e', 'fst_is_safe_to_debug'],
             'Upload' => ['fst_upload'],
             'Validation' => ['fst_validate'],
             'Debug' => ['fst_dump', 'fst_dd'],
@@ -1540,7 +1596,7 @@ HTML;
 
     function fst_admin_show_plugins() {
         fst_admin_check_auth();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
         $csrf = fst_csrf_field();
 
@@ -1645,7 +1701,7 @@ HTML;
     function fst_admin_toggle_plugin() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $filename = basename($_POST['filename'] ?? '');
@@ -1669,7 +1725,7 @@ HTML;
     function fst_admin_uninstall_plugin() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $filename = basename($_POST['filename'] ?? '');
@@ -1686,7 +1742,7 @@ HTML;
     function fst_admin_install_plugin() {
         fst_admin_check_auth();
         fst_csrf_check();
-        global $fst_config;
+        $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $id = $_POST['id'] ?? '';

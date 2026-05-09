@@ -1,6 +1,13 @@
 document.addEventListener('click', function(e) {
+    // 1. Hargai jika library JS lain (Vue/Alpine) sudah mencegah event ini
+    if (e.defaultPrevented) return; 
+
     const link = e.target.closest('a');
     if (!link || !link.href) return;
+
+    // 2. Berikan opsi opt-out manual melalui class atau attribute
+    if (link.hasAttribute('data-no-spa') || link.classList.contains('no-spa')) return;
+
     if (link.target === '_blank' || link.hasAttribute('download')) return;
     if (link.hostname !== window.location.hostname) return;
     if (e.ctrlKey || e.metaKey || e.shiftKey) return;

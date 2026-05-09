@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Core**: Centralized state management via `fst_app()` static state container.
+- **Core**: Upgraded Middleware system to **Onion Model** supporting recursive `$next()` calls.
+- **Security**: Hardened Error Handler with **Double-Layer Safety Net** via `fst_is_safe_to_debug()`.
+- **SPA**: Added opt-out capability via `data-no-spa` / `no-spa` and respect for `e.defaultPrevented`.
 - Zero-Config SPA architecture (SSR-to-SPA mode).
 - **Core**: Added **Strict Route Detection** to prevent duplicate route definitions.
 - **Core**: Added **PostgreSQL** driver support via PDO and cross-database identifier quoting.
