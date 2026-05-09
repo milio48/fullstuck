@@ -209,74 +209,6 @@ function _fst_match_static_routes() {
     return false;
 }
 
-function _fst_match_dynamic_routes($request_uri_path, $absolute_path) {
-    $fst_config = fst_app('config');
-    
-    $routing_mode = $fst_config['routing']['mode'] ?? 'static';
-    $allow_dynamic_fallback = $fst_config['routing']['static_config']['dynamic_fallback'] ?? false;
-
-    if ($routing_mode === 'static' && !$allow_dynamic_fallback) {
-        return false;
-    }
-
-    $dynamic_config = $fst_config['routing']['dynamic_config'] ?? [];
-    $pages_dir = $dynamic_config['pages_dir'] ?? '';
-    $allowed_exec_exts = $dynamic_config['whitelist_filetype'] ?? ['php'];
-    $index_files = $dynamic_config['index_files'] ?? ['index.php', 'index.html'];
-    $directory_listing = $dynamic_config['directory_listing'] ?? false;
-
-    // Jika pages_dir dikonfigurasi, rebuild absolute_path agar mengarah ke subfolder tersebut
-    if (!empty($pages_dir)) {
-        $absolute_path = FST_ROOT_DIR . DIRECTORY_SEPARATOR . trim($pages_dir, '/\\') . $request_uri_path;
-    }
-
-    if (is_file($absolute_path)) {
-        $ext = strtolower(pathinfo($absolute_path, PATHINFO_EXTENSION));
-        if (in_array($ext, $allowed_exec_exts)) { 
-            fst_serve_dynamic_file($absolute_path); 
-            fst_app('route_found', true); 
-            return true; 
-        } else { 
-            fst_serve_static_file($absolute_path); 
-            fst_app('route_found', true); 
-            return true; 
-        }
-    }
-    elseif (is_dir($absolute_path)) {
-        if (str_ends_with($request_uri_path, '/')) {
-            foreach ($index_files as $index_file) {
-                $file_to_check = rtrim($absolute_path, '/') . '/' . $index_file;
-                if (is_file($file_to_check)) { 
-                    fst_serve_dynamic_file($file_to_check); 
-                    fst_app('route_found', true); 
-                    return true; 
-                }
-            }
-            if ($directory_listing) { 
-                $relative_path_for_listing = trim($request_uri_path, '/'); 
-                fst_show_directory_listing($absolute_path, $relative_path_for_listing); 
-                fst_app('route_found', true); 
-                return true; 
-            }
-        } else { 
-            fst_redirect($request_uri_path . '/', 301); 
-            return true;
-        }
-    }
-    elseif (!str_contains(basename($request_uri_path), '.')) {
-        foreach ($allowed_exec_exts as $ext) {
-            $file_to_check = $absolute_path . '.' . $ext;
-            if (is_file($file_to_check)) { 
-                fst_serve_dynamic_file($file_to_check); 
-                fst_app('route_found', true); 
-                return true; 
-            }
-        }
-    }
-    
-    return false;
-}
-
 function fst_run() {
     
     ob_start();
@@ -305,13 +237,6 @@ function fst_run() {
         }
     }
     
-    if (!$handled) {
-        // 5. Prioritas #3: Dynamic Routing (Fallback ke direktori)
-        if (_fst_match_dynamic_routes($req['uri_path'], $req['absolute_path'])) {
-            $handled = true;
-        }
-    }
-
     // 6. Jika semua gagal, berikan 404
     if (!$handled && !fst_app('route_found')) {
         fst_abort(404);

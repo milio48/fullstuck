@@ -26,33 +26,4 @@ function fst_serve_static_file($file_path) {
     readfile($file_path);
 }
 
-function fst_serve_dynamic_file($file_path) { 
-    $ext = strtolower(pathinfo($file_path, PATHINFO_EXTENSION)); 
-    if ($ext === 'php') { 
-        require $file_path; 
-    } else { 
-        fst_serve_static_file($file_path); 
-    } 
-}
-
-function fst_show_directory_listing($dir_path, $uri_prefix) { 
-    echo "<h1>Index of /" . htmlspecialchars(trim($uri_prefix, '/')) . "</h1><hr><ul>"; 
-    if ($uri_prefix) { 
-        echo "<li><a href='../'>../ (Parent Directory)</a></li>"; 
-    } 
-    $files = scandir($dir_path); 
-    if ($files === false) { 
-        echo "<li>Cannot read directory contents.</li>"; 
-    } else { 
-        natcasesort($files); 
-        foreach ($files as $file) { 
-            if ($file === '.' || $file === '..') continue; 
-            $relative_uri = '/' . trim($uri_prefix, '/') . ($uri_prefix ? '/' : '') . $file; 
-            $is_dir = is_dir($dir_path . '/' . $file); 
-            $link_text = $file . ($is_dir ? '/' : ''); 
-            echo "<li><a href='" . htmlspecialchars($relative_uri) . "'>" . htmlspecialchars($link_text) . "</a></li>"; 
-        } 
-    } 
-    echo "</ul><hr>"; 
-}
 ?>

@@ -13,15 +13,26 @@ function fst_handle_installation() {
             }
             
             $config_data = [
-                "environment" => "development", "admin" => ["page_url" => $_POST['admin_url'] ?? '/stuck',"password" => password_hash($_POST['admin_pass'], PASSWORD_DEFAULT)],
+                "environment" => "development", 
+                "admin" => [
+                    "page_url" => $_POST['admin_url'] ?? '/stuck',
+                    "password" => password_hash($_POST['admin_pass'], PASSWORD_DEFAULT)
+                ],
                 "database" => [
                     "driver" => $driver,
-                    "mysql" => ["host" => $_POST['db_host'] ?? 'localhost',"dbname" => $_POST['db_name'] ?? '',"username" => $_POST['db_user'] ?? 'root',"password" => $_POST['db_pass'] ?? ''],
+                    "mysql" => ["host" => $_POST['db_host'] ?? 'localhost', "dbname" => $_POST['db_name'] ?? '', "username" => $_POST['db_user'] ?? 'root', "password" => $_POST['db_pass'] ?? ''],
                     "sqlite" => ["database_path" => $_POST['db_path'] ?? 'database.sqlite'],
                     "pgsql" => ["host" => $_POST['db_host'] ?? 'localhost', "port" => $_POST['db_port'] ?? '5432', "dbname" => $_POST['db_name'] ?? '', "username" => $_POST['db_user'] ?? 'postgres', "password" => $_POST['db_pass'] ?? '']
                 ],
-                "routing" => ["mode" => $_POST['routing_mode'] ?? 'static',"base_path" => "/","public_folders" => ["assets", "uploads", "storage/public"],"error_handlers" => ["404" => "views/errors/404.php","403" => "Sorry, you do not have permission.","405" => "Method not allowed.","500" => "views/errors/500.php"],"static_config" => ["routes_file" => ["router.php"],"dynamic_fallback" => false],"dynamic_config" => ["whitelist_filetype" => ["php", "html"],"index_files" => ["index.php", "index.html"],"directory_listing" => false],"regex_shortcuts" => ["i"=>"([0-9]+)","a"=>"([a-zA-Z0-9]+)","s"=>"([a-zA-Z0-9\\-]+)","h"=>"([a-fA-F0-9]+)","any"=>"([^/]+)"]],
-                "mime_types" => ["css"=>"text/css","js"=>"application/javascript","jpg"=>"image/jpeg","jpeg"=>"image/jpeg","png"=>"image/png","gif"=>"image/gif","svg"=>"image/svg+xml","woff"=>"font/woff","woff2"=>"font/woff2","ttf"=>"font/ttf","eot"=>"application/vnd.ms-fontobject","html"=>"text/html","htm"=>"text/html","txt"=>"text/plain","json"=>"application/json","pdf"=>"application/pdf"]
+                "routing" => [
+                    "base_path" => "/",
+                    "public_folders" => ["assets", "uploads", "storage/public"],
+                    "routes_file" => ["router.php"],
+                    "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
+                ],
+                "spa" => [
+                    "enabled" => isset($_POST['enable_spa']) && $_POST['enable_spa'] === '1'
+                ]
             ];
             
             if (file_put_contents(FST_CONFIG_FILE, json_encode($config_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) === false) throw new Exception("Failed to write `fullstuck.json`. Check folder permissions.");
@@ -52,6 +63,33 @@ function fst_handle_installation() {
                 }
             }
 
+            // Auto-Scaffolding Starter Project
+            if (isset($_POST['generate_starter']) && $_POST['generate_starter'] === '1') {
+                @mkdir(FST_ROOT_DIR . '/assets', 0755, true);
+                @file_put_contents(FST_ROOT_DIR . '/assets/style.css', "body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; margin-top: 50px; background: #f8f9fa; color: #333; } a { color: #007bff; text-decoration: none; } a:hover { text-decoration: underline; }");
+
+                @mkdir(FST_ROOT_DIR . '/views', 0755, true);
+                $html_template = <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title><?= e(\$title ?? 'FullStuck') ?></title>
+    <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+    <h1>🚀 Welcome to FullStuck!</h1>
+    <p>Your AI-Friendly Micro Framework is running perfectly.</p>
+    <p><a href="{$_POST['admin_url']}">Go to Admin Dashboard</a></p>
+</body>
+</html>
+HTML;
+                @file_put_contents(FST_ROOT_DIR . '/views/home.php', $html_template);
+
+                $router_code = "<?php\n\n// Welcome to FullStuck.php!\nfst_get('/', function() {\n    fst_view('views/home.php', ['title' => 'Hello FullStuck!']);\n});\n";
+                @file_put_contents(FST_ROOT_DIR . '/router.php', $router_code);
+            }
+
             echo fst_show_install_success($htaccess_content); return;
         } catch (Exception $e) { $error_message = "ERROR: " . $e->getMessage(); }
     }
@@ -76,7 +114,21 @@ function fst_show_install_form($error_message) { $checks = ['php_version' => ver
 $html = <<<HTML
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>FullStuck.php Installation</title>
 <style>body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; line-height: 1.6; } h1, h2 { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; } table { width: 100%; border-collapse: collapse; margin-bottom: 20px; } th, td { text-align: left; padding: 8px; border-bottom: 1px solid #f0f0f0; } tr:nth-child(even) { background-color: #f9f9f9; } .form-group { margin-bottom: 15px; } label { display: block; font-weight: bold; margin-bottom: 5px; } input[type="text"], input[type="password"], select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; } button { background: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; } button:hover { background: #0056b3; } .error { background: #ffe0e0; border: 1px solid #ffb0b0; color: #d00; padding: 15px; border-radius: 4px; margin-bottom: 20px; } .note { font-size: 0.9em; color: #555; } code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }</style>
-</head><body><h1>🚀 Welcome to FullStuck.php</h1><p>The <code>fullstuck.json</code> configuration file was not found. Please complete the installation steps below to get started.</p>{$error_html}<h2>🛠️ Server Compatibility Check</h2><table><thead><tr><th>Requirement</th><th>Status</th><th>Notes</th></tr></thead><tbody>{$status_rows}</tbody></table><h2>⚙️ Configuration</h2><form method="POST" id="install-form"><div class="form-group"><label>Web Server Type</label><select name="server_type"><option value="apache_litespeed" {$opt_apache}>Apache / Litespeed (.htaccess will be created automatically)</option><option value="nginx" {$opt_nginx}>Nginx (Instructions will be shown later)</option><option value="php_s" {$opt_php_s}>PHP -S (No .htaccess needed)</option><option value="other" {$opt_other}>Other (Manual configuration)</option></select></div><div class="form-group"><label>Database Driver</label><select name="driver" id="driver-select"><option value="sqlite" {$opt_sqlite}>SQLite</option><option value="mysql" {$opt_mysql}>MySQL</option><option value="pgsql" {$opt_pgsql}>PostgreSQL</option><option value="none">No Database (Setup Later)</option></select></div><div id="mysql-fields"><div class="form-group"><label for="db_host">Database Host</label><input type="text" name="db_host" id="db_host" value="localhost"></div><div id="port-field" class="form-group"><label for="db_port">Database Port</label><input type="text" name="db_port" id="db_port" placeholder="e.g. 3306 or 5432"></div><div class="form-group"><label for="db_name">Database Name</label><input type="text" name="db_name" id="db_name" value="fullstuck_db"></div><div class="form-group"><label for="db_user">Database Username</label><input type="text" name="db_user" id="db_user" value="root"></div><div class="form-group"><label for="db_pass">Database Password</label><input type="password" name="db_pass" id="db_pass"></div></div><div id="sqlite-fields"><div class="form-group"><label for="db_path">SQLite File Path</label><input type="text" name="db_path" id="db_path" value="database.sqlite"><p class="note">Default: <code>database.sqlite</code>. Path is relative to <code>{$root_dir_safe}</code>. The folder will be created if it doesn't exist.</p></div></div><div class="form-group"><label>Routing Mode</label><select name="routing_mode"><option value="static" selected>Static (Whitelist Mode / routes.php) - Recommended</option><option value="dynamic">Dynamic (File System Mode / Apache-like)</option></select><p class="note">Static is more secure and structured. Dynamic is faster for initial setup.</p></div><div class="form-group"><label for="admin_url">Admin Dashboard URL</label><input type="text" name="admin_url" id="admin_url" value="/stuck" required><p class="note">The secret URL to access the admin panel in development mode.</p></div><div class="form-group"><label for="admin_pass">Admin Dashboard Password</label><input type="password" name="admin_pass" id="admin_pass" required><p class="note">Will be hashed. Used for the admin API in development mode.</p></div><div class="form-group"><label style="display:flex; align-items:center; cursor:pointer;"><input type="checkbox" name="download_docs" value="1" style="width:auto; margin-right:10px;" checked> Download documentation for AI (<code>fullstuck_v<?= FST_VERSION ?>.md</code>)</label><p class="note">Helps AI agents (like ChatGPT/Claude) understand the framework context better.</p></div><button type="submit">Install FullStuck.php</button></form>
+</head><body><h1>🚀 Welcome to FullStuck.php</h1><p>The <code>fullstuck.json</code> configuration file was not found. Please complete the installation steps below to get started.</p>{$error_html}<h2>🛠️ Server Compatibility Check</h2><table><thead><tr><th>Requirement</th><th>Status</th><th>Notes</th></tr></thead><tbody>{$status_rows}</tbody></table><h2>⚙️ Configuration</h2><form method="POST" id="install-form"><div class="form-group"><label>Web Server Type</label><select name="server_type"><option value="apache_litespeed" {$opt_apache}>Apache / Litespeed (.htaccess will be created automatically)</option><option value="nginx" {$opt_nginx}>Nginx (Instructions will be shown later)</option><option value="php_s" {$opt_php_s}>PHP -S (No .htaccess needed)</option><option value="other" {$opt_other}>Other (Manual configuration)</option></select></div><div class="form-group"><label>Database Driver</label><select name="driver" id="driver-select"><option value="sqlite" {$opt_sqlite}>SQLite</option><option value="mysql" {$opt_mysql}>MySQL</option><option value="pgsql" {$opt_pgsql}>PostgreSQL</option><option value="none">No Database (Setup Later)</option></select></div><div id="mysql-fields"><div class="form-group"><label for="db_host">Database Host</label><input type="text" name="db_host" id="db_host" value="localhost"></div><div id="port-field" class="form-group"><label for="db_port">Database Port</label><input type="text" name="db_port" id="db_port" placeholder="e.g. 3306 or 5432"></div><div class="form-group"><label for="db_name">Database Name</label><input type="text" name="db_name" id="db_name" value="fullstuck_db"></div><div class="form-group"><label for="db_user">Database Username</label><input type="text" name="db_user" id="db_user" value="root"></div><div class="form-group"><label for="db_pass">Database Password</label><input type="password" name="db_pass" id="db_pass"></div></div><div id="sqlite-fields"><div class="form-group"><label for="db_path">SQLite File Path</label><input type="text" name="db_path" id="db_path" value="database.sqlite"><p class="note">Default: <code>database.sqlite</code>. Path is relative to <code>{$root_dir_safe}</code>. The folder will be created if it doesn't exist.</p></div></div><div class="form-group"><label for="admin_url">Admin Dashboard URL</label><input type="text" name="admin_url" id="admin_url" value="/stuck" required><p class="note">The secret URL to access the admin panel in development mode.</p></div><div class="form-group"><label for="admin_pass">Admin Dashboard Password</label><input type="password" name="admin_pass" id="admin_pass" required><p class="note">Will be hashed. Used for the admin API in development mode.</p></div><div class="form-group"><label style="display:flex; align-items:center; cursor:pointer;"><input type="checkbox" name="download_docs" value="1" style="width:auto; margin-right:10px;" checked> Download documentation for AI (<code>fullstuck_v<?= FST_VERSION ?>.md</code>)</label><p class="note">Helps AI agents (like ChatGPT/Claude) understand the framework context better.</p></div><div class="form-group">
+    <label style="display:flex; align-items:center; cursor:pointer;">
+        <input type="checkbox" name="enable_spa" value="1" style="width:auto; margin-right:10px;" checked> 
+        Enable Zero-Config SPA (Single Page Application)
+    </label>
+    <p class="note">Automatically converts your traditional page loads into instant, seamless transitions.</p>
+</div>
+<div class="form-group">
+    <label style="display:flex; align-items:center; cursor:pointer;">
+        <input type="checkbox" name="generate_starter" value="1" style="width:auto; margin-right:10px;" checked> 
+        Generate Starter Project Files
+    </label>
+    <p class="note">Creates a basic project structure (router.php, views, and css) to help you get started instantly.</p>
+</div>
+<button type="submit">Install FullStuck.php</button></form>
 <script>
     const driverSelect = document.getElementById('driver-select');
     const mysqlFields = document.getElementById('mysql-fields');

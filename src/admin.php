@@ -205,12 +205,10 @@ HTML;
         }
         // Kasus 3: Ini 'production', tidak ada warning yang ditambahkan.
 
-        if ($fst_config['routing']['mode'] === 'static') {
-            $route_files = (array)($fst_config['routing']['static_config']['routes_file'] ?? []);
-            foreach ($route_files as $file) {
-                if (!file_exists(FST_ROOT_DIR . '/' . $file)) {
-                    $errors[] = "Static route file not found: <code>{$file}</code>";
-                }
+        $route_files = (array)($fst_config['routing']['routes_file'] ?? ['router.php']);
+        foreach ($route_files as $file) {
+            if (!file_exists(FST_ROOT_DIR . '/' . $file)) {
+                $errors[] = "Static route file not found: <code>{$file}</code>";
             }
         }
         
@@ -257,7 +255,6 @@ HTML;
         
         // Tampilkan environment yang sedang berjalan
         $content .= "<p><strong>Environment:</strong> " . htmlspecialchars($current_env) . "</p>";
-        $content .= "<p><strong>Routing Mode:</strong> " . htmlspecialchars($fst_config['routing']['mode']) . "</p>";
         $content .= "<p><strong>Database Status:</strong> {$db_status}</p>";
 
         // Extension Health Check
@@ -470,9 +467,7 @@ HTML;
             'Views' => [
                 'fst_view',
                 'fst_partial',
-                'fst_serve_static_file',
-                'fst_serve_dynamic_file',
-                'fst_show_directory_listing'
+                'fst_serve_static_file'
             ],
             'Request' => ['fst_uri', 'fst_method', 'fst_input', 'fst_request', 'fst_file', 'fst_is_spa', 'fst_spa_target'],
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
