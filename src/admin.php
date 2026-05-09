@@ -143,9 +143,48 @@ HTML;
          echo $html;
     }
 
+    function fst_admin_get_remote_info() {
+        $cache_key = 'fst_remote_version_cache';
+        $cache_time = 3600; // 1 jam
+
+        if (isset($_SESSION[$cache_key]) && (time() - $_SESSION[$cache_key]['time'] < $cache_time)) {
+            return $_SESSION[$cache_key]['data'];
+        }
+
+        $remote_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/version.json";
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_json = @file_get_contents($remote_url, false, $ctx);
+        
+        if ($remote_json) {
+            $remote_data = json_decode($remote_json, true);
+            if ($remote_data) {
+                $_SESSION[$cache_key] = [
+                    'time' => time(),
+                    'data' => $remote_data
+                ];
+                return $remote_data;
+            }
+        }
+        return false;
+    }
+
     function fst_admin_show_monitor() {
         fst_admin_check_auth();
         global $fst_config, $fst_pdo;
+
+        $update_banner = '';
+        $remote_data = fst_admin_get_remote_info();
+        if ($remote_data && isset($remote_data['version'])) {
+            if (version_compare(FST_VERSION, $remote_data['version'], '<')) {
+                $update_banner = '<div style="background: #e6f7ff; border: 1px solid #91d5ff; padding: 15px; margin-bottom: 20px; border-radius: 4px; color: #0050b3;">';
+                $update_banner .= '<strong>🚀 New Update Available!</strong> v' . htmlspecialchars($remote_data['version']) . ' is now available. ';
+                $update_banner .= '<a href="https://github.com/milio48/fullstuck/releases" target="_blank" style="color: #1890ff; font-weight: bold;">View Releases</a>';
+                if (isset($remote_data['hash']) && fst_check_integrity()['declared'] !== $remote_data['hash']) {
+                    $update_banner .= '<br><small style="color: #666;">Note: Your core file hash does not match the latest release.</small>';
+                }
+                $update_banner .= '</div>';
+            }
+        }
         
         $dev_warning_html = ''; // Variabel baru untuk warning khusus
         $warnings = [];
@@ -209,6 +248,7 @@ HTML;
         }
 
         $content = "<h2>Configuration Status</h2>";
+        $content .= $update_banner;
         
         // Tampilkan warning khusus di bagian paling atas
         $content .= $dev_warning_html; 
@@ -445,7 +485,7 @@ HTML;
                 'fst_admin_show_config', 'fst_admin_save_config', 'fst_admin_show_routes',
                 'fst_get_server_info', 'fst_admin_show_server_info', 'fst_admin_show_scan_page',
                 'fst_admin_run_scan', 'fst_check_integrity', 'fst_admin_show_integrity', 'fst_admin_show_plugins',
-                'fst_admin_install_plugin', 'fst_admin_toggle_plugin', 'fst_admin_uninstall_plugin'
+                'fst_admin_install_plugin', 'fst_admin_toggle_plugin', 'fst_admin_uninstall_plugin', 'fst_admin_get_remote_info'
             ]
         ];
 
@@ -528,22 +568,16 @@ HTML;
         fst_admin_check_auth();
         $integrity = fst_check_integrity();
         
-        $remote_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/version.json";
+        $remote_data = fst_admin_get_remote_info();
         $remote_info = "<i>Not checked</i>";
         
-        // Remote check attempt
-        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
-        $remote_json = @file_get_contents($remote_url, false, $ctx);
-        if ($remote_json) {
-            $remote_data = json_decode($remote_json, true);
-            if ($remote_data && isset($remote_data['hash'])) {
-                if ($integrity && $integrity['declared'] === $remote_data['hash']) {
-                    $remote_info = "<span style='color:green;'>✔ Match with official GitHub registry (v{$remote_data['version']})</span>";
-                } else {
-                    $remote_info = "<span style='color:red;'>❌ Mismatch with official GitHub registry!</span>";
-                }
+        if ($remote_data && isset($remote_data['hash'])) {
+            if ($integrity && $integrity['declared'] === $remote_data['hash']) {
+                $remote_info = "<span style='color:green;'>✔ Match with official GitHub registry (v{$remote_data['version']})</span>";
+            } else {
+                $remote_info = "<span style='color:red;'>❌ Mismatch with official GitHub registry!</span> (Latest: v{$remote_data['version']})";
             }
-        } else {
+        } elseif ($remote_data === false) {
             $remote_info = "<span style='color:orange;'>Failed to connect to GitHub</span>";
         }
         
