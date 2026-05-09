@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin**: Added **Update Checker** with remote version fetching and cached banner notifications in the System Monitor.
 - **Admin**: Added `fst_check_integrity` and `fst_config` to the Project Scan registry.
 - **Admin**: Updated **Scan Project** to include new SPA and Admin helper functions.
+- **Documentation**: Performed a comprehensive audit of all `fst_` functions and reached 100% API Reference coverage.
+- **Utility**: Added `fst_upload` for secure file management with built-in validation.
+- **Utility**: Promoted `fst_serve_static_file`, `fst_show_directory_listing`, and `fst_extract_html_tag` to the public API.
 ### Fixed
 - **Core**: Routes file missing now only triggers 500 error in production; in development, it allows the framework to boot so the Admin Dashboard can be used to troubleshoot.
 

@@ -15,9 +15,10 @@ Setiap kali menerima instruksi untuk menambah fitur atau memperbaiki *bug*, ikut
 
 ## 2. Aturan Dokumentasi dan Pelaporan (Reporting)
 Setiap perubahan fungsional atau arsitektural **WAJIB** didokumentasikan agar *memory/context* tetap sinkron:
-- **`docs-dev/CHANGELOG.md`**: Rekam setiap penambahan fitur, perubahan penting, atau fungsi yang dihapus di bawah section `[Unreleased]` agar histori versi terlihat jelas.
+- **`CHANGELOG.md`**: Rekam setiap penambahan fitur, perubahan penting, atau fungsi yang dihapus di bawah section `[Unreleased]` agar histori versi terlihat jelas.
 - **`TODO.md`**: Ubah status pekerjaan yang sudah beres menjadi *checked* (`- [x]`). Jika Anda mendeteksi bug atau ide baru, tambahkan ke dalam list.
-- **`docs-dev/DOCUMENTATION.md`**: Apabila Anda membuat fungsi pembantu (*helper*) baru (misal: `fst_sesuatu()`), Anda WAJIB menambahkan deskripsi dan cara panggilannya di file ini.
+- **`docs/v0.1.0.md`**: Apabila Anda membuat fungsi pembantu (*helper*) baru (misal: `fst_sesuatu()`), Anda WAJIB menambahkan deskripsi dan cara panggilannya di file ini agar Asisten AI dapat mempelajarinya.
+- **`version.json`**: File registry publik untuk mencatat versi dan hash `fullstuck.php` terbaru.
 - **`docs-dev/ARCHITECTURE.md` atau `SYSTEM_MAP.md`**: Apabila Anda menambah file sistem baru atau merubah arsitektur *flow*.
 
 ## 3. Aturan Pengujian Fitur (Folder `test/`)
@@ -58,5 +59,6 @@ Setiap kali menambah fungsi baru ke framework (contoh: `fst_db_select`, `fst_val
 | 3 | `docs/v0.1.0.md` | Tambahkan deskripsi fungsi baru di bagian API Reference. |
 | 4 | `CHANGELOG.md` | Catat di bawah section `[Unreleased]`. |
 | 5 | `php src/compiler-fullstuck.php` | Compile ulang agar `fullstuck.php` di root sinkron. |
+| 6 | `version.json` | Update **hash** di file ini dengan nilai `FST_HASH` terbaru dari header `fullstuck.php`. Ini penting untuk fitur Remote Integrity Check. |
 
 *(Note untuk AI Agent: Sebelum Anda memberikan summary final ke user, pastikan file `fullstuck.php` di root selalu ikut ter-update akibat proses build, agar sinkron dengan perubahan pada `src/`).*
