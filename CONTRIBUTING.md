@@ -17,7 +17,7 @@ Setiap kali menerima instruksi untuk menambah fitur atau memperbaiki *bug*, ikut
 Setiap perubahan fungsional atau arsitektural **WAJIB** didokumentasikan agar *memory/context* tetap sinkron:
 - **`CHANGELOG.md`**: Rekam setiap penambahan fitur, perubahan penting, atau fungsi yang dihapus di bawah section `[Unreleased]` agar histori versi terlihat jelas.
 - **`TODO.md`**: Ubah status pekerjaan yang sudah beres menjadi *checked* (`- [x]`). Jika Anda mendeteksi bug atau ide baru, tambahkan ke dalam list.
-- **`docs/v0.1.0.md`**: Apabila Anda membuat fungsi pembantu (*helper*) baru (misal: `fst_sesuatu()`), Anda WAJIB menambahkan deskripsi dan cara panggilannya di file ini agar Asisten AI dapat mempelajarinya.
+- **`docs/vX.X.X.md`**: (Ganti X dengan versi aktif) Apabila Anda membuat fungsi pembantu (*helper*) baru (misal: `fst_sesuatu()`), Anda WAJIB menambahkan deskripsi dan cara panggilannya di file dokumentasi versi terbaru agar Asisten AI dapat mempelajarinya.
 - **`version.json`**: File registry publik untuk mencatat versi dan hash `fullstuck.php` terbaru.
 - **`docs-dev/ARCHITECTURE.md` atau `SYSTEM_MAP.md`**: Apabila Anda menambah file sistem baru atau merubah arsitektur *flow*.
 
@@ -56,7 +56,7 @@ Setiap kali menambah fungsi baru ke framework (contoh: `fst_db_select`, `fst_val
 |---|-------------|---------------|
 | 1 | `src/*.php` | Implementasi fungsi baru. |
 | 2 | `src/admin.php` → `$function_groups` | **Daftarkan** nama fungsi ke grup yang sesuai di dalam array `$function_groups` pada fungsi `fst_admin_run_scan()`. Jika tidak, fungsi akan muncul sebagai **Unknown** saat user menjalankan fitur Scan Project di Admin Dashboard. |
-| 3 | `docs/v0.1.0.md` | Tambahkan deskripsi fungsi baru di bagian API Reference. |
+| 3 | `docs/vX.X.X.md` | Tambahkan deskripsi fungsi baru di bagian API Reference versi terbaru. |
 | 4 | `CHANGELOG.md` | Catat di bawah section `[Unreleased]`. |
 | 5 | `php src/compiler-fullstuck.php` | Compile ulang agar `fullstuck.php` di root sinkron. |
 | 6 | `version.json` | Update **hash** di file ini dengan nilai `FST_HASH` terbaru dari header `fullstuck.php`. Ini penting untuk fitur Remote Integrity Check. |

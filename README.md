@@ -1,20 +1,21 @@
-# FullStuck.php
+# 🚀 FullStuck.php
+### The Zero-Config, AI-Friendly PHP Framework
 
-Sebuah cita-cita framework untuk semua project yang mengedepankan filosofi *single-file* (minim dependensi), mudah dideploy, dan tidak membingungkan.
+**FullStuck.php** adalah framework mikro yang dirancang untuk kecepatan pengembangan maksimal tanpa mengorbankan fitur modern. Seluruh core framework berada dalam **satu file tunggal**, membuatnya sangat mudah di-deploy ke shared hosting mana pun tanpa Composer atau folder `vendor/`.
 
-## Fitur Utama
-- **Zero Config Setup**: Drop file `fullstuck.php` di webserver, buka di browser, instalasi via GUI akan membuat `.htaccess` dan `fullstuck.json`.
-- **Hybrid Routing**: Mendukung `static` route (seperti Laravel/Express) dan `dynamic` route (seperti PHP tradisional yang otomatis membaca path folder).
-- **Built-in Developer Dashboard**: Memantau konfigurasi, routes, dan scanning error proyek di mode development.
-- **Database Ready**: Wrapper bawaan `fst_db()` menggunakan PDO, support SQLite & MySQL.
+> [!NOTE]
+> **Status Proyek:** Saat ini sedang dalam tahap pengembangan intensif (v0.1.0-alpha). Belum rilis secara publik.
 
-## Memulai (Pengguna Framework)
-1. Taruh `fullstuck.php` di dalam web root.
-2. Akses dari browser Anda.
-3. Ikuti setup wizard.
+## ✨ Filosofi
+- **Single File Distribution**: Satu file `fullstuck.php` untuk segalanya.
+- **Zero Configuration**: Setup via GUI Wizard yang otomatis membuat lingkungan Anda siap pakai.
+- **AI-Friendly**: Dokumentasi dan struktur kode dirancang agar asisten AI (seperti Claude/GPT) dapat memahami proyek Anda secara instan.
+- **Zero-Config SPA**: Ubah aplikasi SSR Anda menjadi SPA (Single Page Application) tanpa library tambahan.
 
-## Pengembangan (Framework Developers & AI Agents)
-Project ini menggunakan arsitektur **Dua Dunia**. Kami mengembangkannya secara modular di folder `src/`, lalu meng-compile-nya menjadi 1 file rilis.
-- 🤖 **Bagi AI Agents / Contributor Baru:** Harap membaca [docs-dev/SYSTEM_MAP.md](docs-dev/SYSTEM_MAP.md) terlebih dahulu untuk memuat (*load*) konteks sistem proyek ini secara aman.
-- **Dokumentasi API:** [docs-dev/DOCUMENTATION.md](docs-dev/DOCUMENTATION.md)
-- **Arsitektur Build:** [docs-dev/ARCHITECTURE.md](docs-dev/ARCHITECTURE.md)
+## 🛠️ Pengembangan (Internal Only)
+Repository ini berisi *source code* modular yang berada di folder `src/`. File `fullstuck.php` di root adalah hasil kompilasi.
+
+Bagi kontributor, silakan baca **[CONTRIBUTING.md](CONTRIBUTING.md)** untuk panduan alur kerja pengembangan.
+
+---
+© 2026 FullStuck.php Team. Coming soon to GitHub!
