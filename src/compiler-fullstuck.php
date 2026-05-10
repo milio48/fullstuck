@@ -35,9 +35,9 @@ foreach ($files as $file) {
     }
     
     $content = file_get_contents($path);
-    // Hapus tag pembuka dan penutup php
-    $content = str_replace('<?php', '', $content);
-    $content = str_replace('?>', '', $content);
+    // Hapus tag pembuka dan penutup php (hanya di awal dan akhir file)
+    $content = preg_replace('/^<\?php\s*/i', '', $content);
+    $content = preg_replace('/\s*\?>\s*$/', '', $content);
     
     // Hapus komentar single-line dan multi-line secara hati-hati tapi pertahankan Line Break
     // Menghapus komentar block

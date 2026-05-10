@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Admin**: Streamlined **System Monitor** by removing routing mode status display.
 - **Admin**: Updated **Scan Project** registry to remove deleted view functions and include new core helpers.
 
+### Fixed
+- **Compiler**: Fixed aggressive PHP tag removal that corrupted string literals in source files (e.g., scaffolding templates in `install.php`).
+
 ## [v0.1.0] - 2026-05-06
 - Initial release of FullStuck.php "Two Worlds" architecture.
 - Core router with middleware support.
