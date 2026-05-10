@@ -3,9 +3,9 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: e2939a17c679ed1740bba39bdb6266d3aa814258e5f09f554456681b9fb9e96b
+ * 💡 Version: 0.1.0 | FST_HASH: 416c79ea269305859446c2efdc6d2cf3202ae931cf2ef60c4295177433f05ae0
  */
-define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', function(e) { // 1. Hargai jika library JS lain (Vue/Alpine) sudah mencegah event ini if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href) return; // 2. Berikan opsi opt-out manual melalui class atau attribute if (link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\')) return; if (link.target === \'_blank\' || link.hasAttribute(\'download\')) return; if (link.hostname !== window.location.hostname) return; if (e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); fstNavigate(link.href); }); window.addEventListener(\'popstate\', function(e) { fstNavigate(window.location.href, false); }); async function fstNavigate(url, pushState = true) { try { const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const headers = {}; headers[reqHeader] = \'true\'; headers[targetHeader] = \'body\'; // Default target const response = await fetch(url, { headers: headers }); if (!response.ok) { window.location.href = url; // fallback return; } const html = await response.text(); document.body.innerHTML = html; if (pushState) { window.history.pushState({}, \'\', url); } // Dispatch fst:load event for plugins/scripts to re-initialize document.dispatchEvent(new Event(\'fst:load\')); // Re-execute scripts inside body const scripts = document.body.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); } catch (err) { window.location.href = url; // fallback } } // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
+define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); // Ambil selector target dan opsi history const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; // Lengkapi: Tambahkan class \'fst-loading\' ke elemen targetSelector const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); // Lengkapi: Dispatch event \'fst:unload\' ke document document.dispatchEvent(new Event(\'fst:unload\')); // Lengkapi: Ganti innerHTML targetElement dengan html dari response targetElement.innerHTML = html; // Lengkapi: Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector } if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } // Lengkapi: Eksekusi ulang tag <script> di dalam targetElement (jangan lupa skip script dengan id \'fst-spa-agent\') const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // Lengkapi: Dispatch event \'fst:load\' ke document document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { // Lengkapi: Hapus class \'fst-loading\' dari elemen targetSelector if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { // Lengkapi: Cek jika e.state && e.state.fstHtml && e.state.fstTarget tersedia. if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { // 1. Dispatch fst:unload document.dispatchEvent(new Event(\'fst:unload\')); // 2. Isi document.querySelector(e.state.fstTarget).innerHTML dengan e.state.fstHtml targetElement.innerHTML = e.state.fstHtml; // 3. Eksekusi ulang script di dalamnya (skip fst-spa-agent) const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // 4. Dispatch fst:load document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { // Jika state tidak ada, fallback jalankan: window.location.reload(); window.location.reload(); } }); // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
 
 
 // FILE: core.php
@@ -187,16 +187,27 @@ function fst_spa_target(): string {
     return $_SERVER[$target_header] ?? 'body';
 }
 
-function fst_extract_html_tag($html, $tag = 'body') {
+function fst_extract_html_fragment($html, $selector = 'body') {
     if (empty(trim($html))) return '';
     libxml_use_internal_errors(true);
     $dom = new DOMDocument();
     $dom->loadHTML('<?xml encoding="utf-8" ' . $html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
     libxml_clear_errors();
-    $elements = $dom->getElementsByTagName($tag);
-    if ($elements->length > 0) {
+
+    $xpath_query = '//' . $selector; // Default tag
+    if (str_starts_with($selector, '#')) {
+        $id = substr($selector, 1);
+        $xpath_query = "//*[@id='{$id}']";
+    } elseif (str_starts_with($selector, '.')) {
+        $class = substr($selector, 1);
+        $xpath_query = "//*[contains(concat(' ', normalize-space(@class), ' '), ' {$class} ')]";
+    }
+
+    $xpath = new DOMXPath($dom);
+    $nodes = $xpath->query($xpath_query);
+    if ($nodes && $nodes->length > 0) {
         $inner_html = '';
-        foreach ($elements->item(0)->childNodes as $child) {
+        foreach ($nodes->item(0)->childNodes as $child) {
             $inner_html .= $dom->saveHTML($child);
         }
         return $inner_html;
@@ -571,7 +582,7 @@ function fst_run() {
 
     if (fst_is_spa()) {
         $target = fst_spa_target();
-        $output = fst_extract_html_tag($output, $target); 
+        $output = fst_extract_html_fragment($output, $target); 
     } 
 
     else if (fst_config('spa.enabled', false)) {
@@ -814,8 +825,13 @@ function fst_handle_installation() {
                     "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
                 ],
                 "spa" => [
-                    "enabled" => isset($_POST['enable_spa']) && $_POST['enable_spa'] === '1'
+                    "enabled" => isset($_POST['enable_spa']) && $_POST['enable_spa'] === '1',
+                    "default_target" => "body",
+                    "header_request" => "X-FST-Request",
+                    "header_target" => "X-FST-Target",
+                    "indicator_class" => "fst-loading"
                 ]
+
             ];
             
             if (file_put_contents(FST_CONFIG_FILE, json_encode($config_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) === false) throw new Exception("Failed to write `fullstuck.json`. Check folder permissions.");
@@ -1399,7 +1415,8 @@ HTML;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $function_groups = [
-            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_tag', 'fst_app'],
+            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_fragment', 'fst_app'],
+
             'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
             'Views' => [
                 'fst_view',
