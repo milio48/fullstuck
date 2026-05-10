@@ -12,23 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core**: Upgraded Middleware system to **Onion Model** supporting recursive `$next()` calls.
 - **Security**: Hardened Error Handler with **Double-Layer Safety Net** via `fst_is_safe_to_debug()`.
 - **SPA**: Added opt-out capability via `data-no-spa` / `no-spa` and respect for `e.defaultPrevented`.
-- Zero-Config SPA architecture (SSR-to-SPA mode).
+- **Installer**: Added **Auto-Scaffolding** to generate starter project files (`router.php`, `views/`, `assets/`) during installation.
+- **Installer**: Added **Zero-Config SPA** toggle to the installation wizard.
 - **Core**: Added **Strict Route Detection** to prevent duplicate route definitions.
-- **Core**: Added **PostgreSQL** driver support via PDO and cross-database identifier quoting.
+- **Core**: Added **PostgreSQL** driver support via PDO.
 - **Core**: Added `fst-plugins/` Auto-Discovery for modular framework extension.
-- **SPA**: Implemented Virtual Output Buffer and HTML Clipping for Zero-Config SPA navigation.
-- **Admin**: Added **Plugin Marketplace** with remote fetching from GitHub `store.json`.
-- **Admin**: Added **Enable/Disable** (via renaming) and **Uninstall** features to the Plugin Manager.
-- **Admin**: Implemented **One-Click Plugin Installer** for direct PHP plugin deployment.
-- **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote GitHub sync.
-- **Admin**: Added **Update Checker** with remote version fetching and cached banner notifications in the System Monitor.
-- **Admin**: Added `fst_check_integrity` and `fst_config` to the Project Scan registry.
-- **Admin**: Updated **Scan Project** to include new SPA and Admin helper functions.
-- **Documentation**: Performed a comprehensive audit of all `fst_` functions and reached 100% API Reference coverage.
-- **Utility**: Added `fst_upload` for secure file management with built-in validation.
-- **Utility**: Promoted `fst_serve_static_file`, `fst_show_directory_listing`, and `fst_extract_html_tag` to the public API.
-### Fixed
-- **Core**: Routes file missing now only triggers 500 error in production; in development, it allows the framework to boot so the Admin Dashboard can be used to troubleshoot.
+- **Admin**: Added **Plugin Marketplace** with remote fetching and one-click installation.
+- **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote update checker.
+
+### Removed
+- **Core**: Removed **Dynamic Routing** mode (dead code amputation) to enforce strict, whitelist-based routing.
+- **View**: Removed `fst_serve_dynamic_file` and `fst_show_directory_listing` public functions.
+
+### Changed
+- **Core**: Simplified `fullstuck.json` schema by removing nested routing modes (`static_config`/`dynamic_config`).
+- **Admin**: Streamlined **System Monitor** by removing routing mode status display.
+- **Admin**: Updated **Scan Project** registry to remove deleted view functions and include new core helpers.
 
 ## [v0.1.0] - 2026-05-06
 - Initial release of FullStuck.php "Two Worlds" architecture.
