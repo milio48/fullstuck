@@ -247,7 +247,7 @@ function fst_run() {
     // Eksekusi Clipping HTML jika ini permintaan SPA
     if (fst_is_spa()) {
         $target = fst_spa_target();
-        $output = fst_extract_html_tag($output, $target); 
+        $output = fst_extract_html_fragment($output, $target); 
     } 
     // Jika bukan request SPA, tapi SPA mode aktif, injeksi Javascript-nya
     else if (fst_config('spa.enabled', false)) {

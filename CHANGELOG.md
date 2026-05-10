@@ -11,7 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core**: Centralized state management via `fst_app()` static state container.
 - **Core**: Upgraded Middleware system to **Onion Model** supporting recursive `$next()` calls.
 - **Security**: Hardened Error Handler with **Double-Layer Safety Net** via `fst_is_safe_to_debug()`.
+- **SPA**: Upgraded to support **Fragment Rendering** (target-specific swapping via class/ID selectors).
+- **SPA**: Added **Lifecycle Events** support (`fst:unload` and `fst:load`).
+- **SPA**: Implemented **Native History Caching** for instant back/forward navigation without re-fetching.
 - **SPA**: Added opt-out capability via `data-no-spa` / `no-spa` and respect for `e.defaultPrevented`.
+
 - **Installer**: Added **Auto-Scaffolding** to generate starter project files (`router.php`, `views/`, `assets/`) during installation.
 - **Installer**: Added **Zero-Config SPA** toggle to the installation wizard.
 - **Core**: Added **Strict Route Detection** to prevent duplicate route definitions.

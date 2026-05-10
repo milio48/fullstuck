@@ -178,21 +178,34 @@ function fst_spa_target(): string {
     return $_SERVER[$target_header] ?? 'body';
 }
 
-function fst_extract_html_tag($html, $tag = 'body') {
+function fst_extract_html_fragment($html, $selector = 'body') {
     if (empty(trim($html))) return '';
     libxml_use_internal_errors(true);
     $dom = new DOMDocument();
     $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
     libxml_clear_errors();
-    $elements = $dom->getElementsByTagName($tag);
-    if ($elements->length > 0) {
+
+    // Mini-parser selector ke XPath
+    $xpath_query = '//' . $selector; // Default tag
+    if (str_starts_with($selector, '#')) {
+        $id = substr($selector, 1);
+        $xpath_query = "//*[@id='{$id}']";
+    } elseif (str_starts_with($selector, '.')) {
+        $class = substr($selector, 1);
+        $xpath_query = "//*[contains(concat(' ', normalize-space(@class), ' '), ' {$class} ')]";
+    }
+
+    $xpath = new DOMXPath($dom);
+    $nodes = $xpath->query($xpath_query);
+    if ($nodes && $nodes->length > 0) {
         $inner_html = '';
-        foreach ($elements->item(0)->childNodes as $child) {
+        foreach ($nodes->item(0)->childNodes as $child) {
             $inner_html .= $dom->saveHTML($child);
         }
         return $inner_html;
     }
     return $html;
 }
+
 
 ?>

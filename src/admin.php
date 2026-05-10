@@ -462,7 +462,8 @@ HTML;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $function_groups = [
-            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_tag', 'fst_app'],
+            'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_fragment', 'fst_app'],
+
             'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
             'Views' => [
                 'fst_view',

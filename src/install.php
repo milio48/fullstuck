@@ -31,8 +31,13 @@ function fst_handle_installation() {
                     "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
                 ],
                 "spa" => [
-                    "enabled" => isset($_POST['enable_spa']) && $_POST['enable_spa'] === '1'
+                    "enabled" => isset($_POST['enable_spa']) && $_POST['enable_spa'] === '1',
+                    "default_target" => "body",
+                    "header_request" => "X-FST-Request",
+                    "header_target" => "X-FST-Target",
+                    "indicator_class" => "fst-loading"
                 ]
+
             ];
             
             if (file_put_contents(FST_CONFIG_FILE, json_encode($config_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) === false) throw new Exception("Failed to write `fullstuck.json`. Check folder permissions.");
