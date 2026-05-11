@@ -1,8 +1,6 @@
 <?php
-try {
-    $fst_config = fst_app('config');
-    if (!$fst_config) throw new Exception("Configuration not loaded.");
-
+$fst_config = fst_app('config');
+if ($fst_config) {
     $db_all_config = $fst_config['database'] ?? null;
     $driver = $db_all_config['driver'] ?? 'none';
 
@@ -35,16 +33,26 @@ try {
             else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
         }
     }
-} catch (Exception $e) {
-    if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
-    else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
 }
 
 function fst_db_quote_ident($name) {
     $fst_config = fst_app('config');
-    $driver = $fst_config['database']['driver'] ?? 'mysql';
+    $driver = $fst_config['database']['driver'] ?? 'sqlite';
     $q = ($driver === 'pgsql') ? '"' : '`';
     return $q . str_replace($q, $q . $q, $name) . $q;
+}
+
+// Sanitasi order_by agar aman dari SQL Injection
+function _fst_sanitize_order_by($order_by) {
+    $parts = array_map('trim', explode(',', $order_by));
+    $safe_parts = [];
+    foreach ($parts as $part) {
+        // Format yang diizinkan: "column_name" atau "column_name ASC/DESC"
+        if (preg_match('/^([a-zA-Z_][a-zA-Z0-9_.]*)(\s+(ASC|DESC))?$/i', $part, $m)) {
+            $safe_parts[] = fst_db_quote_ident($m[1]) . (isset($m[3]) ? ' ' . strtoupper($m[3]) : '');
+        }
+    }
+    return !empty($safe_parts) ? implode(', ', $safe_parts) : null;
 }
 
 function fst_db($mode, $sql, $params = []) {
@@ -77,7 +85,10 @@ function fst_db_select($table, $conditions = [], $options = []) {
         }
         $sql .= " WHERE " . implode(" AND ", $where);
     }
-    if (isset($options['order_by'])) $sql .= " ORDER BY " . $options['order_by'];
+    if (isset($options['order_by'])) {
+        $safe_order = _fst_sanitize_order_by($options['order_by']);
+        if ($safe_order) $sql .= " ORDER BY " . $safe_order;
+    }
     if (isset($options['limit'])) $sql .= " LIMIT " . (int)$options['limit'];
     if (isset($options['offset'])) $sql .= " OFFSET " . (int)$options['offset'];
     

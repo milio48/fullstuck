@@ -1,4 +1,5 @@
 <?php
+$fst_config = fst_app('config');
 $routes_files = (array) ($fst_config['routing']['routes_file'] ?? ['router.php']);
 foreach ($routes_files as $file) {
     if (file_exists(FST_ROOT_DIR . '/' . $file)) {

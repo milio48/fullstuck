@@ -35,15 +35,30 @@ foreach ($files as $file) {
     }
     
     $content = file_get_contents($path);
-    // Hapus tag pembuka dan penutup php (hanya di awal dan akhir file)
-    $content = preg_replace('/^<\?php\s*/i', '', $content);
-    $content = preg_replace('/\s*\?>\s*$/', '', $content);
     
-    // Hapus komentar single-line dan multi-line secara hati-hati tapi pertahankan Line Break
-    // Menghapus komentar block
-    $content = preg_replace('!/\*.*?\*/!s', '', $content);
-    // Menghapus komentar baris yang dimulai dengan // atau #
-    $content = preg_replace('/^\s*(?:\/\/|#).*/m', '', $content);
+    // Gunakan PHP Tokenizer untuk menghapus komentar dengan aman
+    // (tidak akan menyentuh string yang mengandung pola mirip komentar)
+    $tokens = token_get_all($content);
+    $cleaned = '';
+    foreach ($tokens as $token) {
+        if (is_array($token)) {
+            // Hapus komentar
+            if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT])) {
+                // Pertahankan line break agar struktur baris terjaga
+                $cleaned .= str_repeat("\n", substr_count($token[1], "\n"));
+                continue;
+            }
+            // Hapus tag pembuka dan penutup PHP
+            if (in_array($token[0], [T_OPEN_TAG, T_CLOSE_TAG])) {
+                $cleaned .= str_repeat("\n", substr_count($token[1], "\n"));
+                continue;
+            }
+            $cleaned .= $token[1];
+        } else {
+            $cleaned .= $token;
+        }
+    }
+    $content = $cleaned;
     
     $compiled_code .= "\n// FILE: {$file}\n";
     $compiled_code .= trim($content) . "\n";

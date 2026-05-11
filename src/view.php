@@ -1,5 +1,13 @@
 <?php
-function fst_view($path, $data = []) { extract($data); require FST_ROOT_DIR . '/' . $path; }
+function fst_view($path, $data = []) {
+    $__fst_file = realpath(FST_ROOT_DIR . '/' . $path);
+    $__fst_root = realpath(FST_ROOT_DIR);
+    if (!$__fst_file || !$__fst_root || !str_starts_with($__fst_file, $__fst_root)) {
+        fst_abort(500, "Invalid view path.");
+    }
+    extract($data, EXTR_SKIP);
+    require $__fst_file;
+}
 function fst_partial($path, $data = []) { fst_view($path, $data); }
 
 function fst_serve_static_file($file_path) {
@@ -9,11 +17,23 @@ function fst_serve_static_file($file_path) {
     $mime_types = $fst_config['mime_types'] ?? [
         'css'  => 'text/css',
         'js'   => 'application/javascript',
+        'json' => 'application/json',
+        'xml'  => 'application/xml',
         'jpg'  => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
         'png'  => 'image/png',
+        'gif'  => 'image/gif',
+        'webp' => 'image/webp',
+        'ico'  => 'image/x-icon',
         'svg'  => 'image/svg+xml',
+        'woff' => 'font/woff',
+        'woff2'=> 'font/woff2',
+        'ttf'  => 'font/ttf',
+        'mp4'  => 'video/mp4',
+        'webm' => 'video/webm',
         'html' => 'text/html',
-        'txt'  => 'text/plain'
+        'txt'  => 'text/plain',
+        'map'  => 'application/json'
     ];
     
     $content_type = $mime_types[$ext] ?? 'application/octet-stream';

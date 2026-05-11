@@ -87,8 +87,8 @@ HTML;
          $success_msg = fst_flash_get('success_message');
          $error_msg = fst_flash_get('error_message');
          $info_html = '';
-         if ($success_msg) $info_html .= "<p style='color:green;'>{$success_msg}</p>";
-         if ($error_msg) $info_html .= "<p style='color:red;'>{$error_msg}</p>";
+         if ($success_msg) $info_html .= "<p style='color:green;'>" . htmlspecialchars($success_msg) . "</p>";
+         if ($error_msg) $info_html .= "<p style='color:red;'>" . htmlspecialchars($error_msg) . "</p>";
          
          $html = <<<HTML
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>{$title} - Admin</title>
@@ -464,7 +464,7 @@ HTML;
         $function_groups = [
             'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_fragment', 'fst_app'],
 
-            'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete'],
+            'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete', 'fst_db_quote_ident', '_fst_sanitize_order_by'],
             'Views' => [
                 'fst_view',
                 'fst_partial',
@@ -772,6 +772,18 @@ HTML;
             fst_redirect($admin_base . '/plugins');
         }
 
+        // Keamanan: Hanya izinkan download via HTTPS dari domain tepercaya
+        if (!preg_match('/^https:\/\//', $url)) {
+            fst_flash_set('error_message', 'Plugin URL must use HTTPS.');
+            fst_redirect($admin_base . '/plugins');
+        }
+        $allowed_hosts = ['raw.githubusercontent.com', 'github.com', 'gist.githubusercontent.com'];
+        $url_host = parse_url($url, PHP_URL_HOST);
+        if (!$url_host || !in_array(strtolower($url_host), $allowed_hosts)) {
+            fst_flash_set('error_message', 'Plugin download is only allowed from trusted sources (GitHub).');
+            fst_redirect($admin_base . '/plugins');
+        }
+
         // Pastikan direktori plugin ada
         $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
         if (!is_dir($plugin_dir)) {
@@ -790,7 +802,7 @@ HTML;
         } else {
             $filename = $plugin_dir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $id) . '.php';
             if (file_put_contents($filename, $content) !== false) {
-                fst_flash_set('success_message', 'Plugin <strong>' . htmlspecialchars($id) . '</strong> installed successfully!');
+                fst_flash_set('success_message', 'Plugin ' . htmlspecialchars($id) . ' installed successfully!');
             } else {
                 fst_flash_set('error_message', 'Failed to save plugin file. Check permissions.');
             }

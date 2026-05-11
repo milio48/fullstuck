@@ -38,6 +38,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FIM**: Fixed `fst_check_integrity()` failing on Windows due to CRLF line endings — replaced `explode(" */\n", ...)` with `preg_split` to handle both `\r\n` and `\n`.
 - **FIM**: Fixed `fst_check_integrity()` unable to locate `fullstuck.php` when running `php -S` from test subfolders — added `$_SERVER['SCRIPT_FILENAME']` fallback for path resolution.
 
+### Security (Code Review Hardening)
+- **Database**: Fixed **SQL Injection** vulnerability in `fst_db_select()` `order_by` option — user input is now sanitized via `_fst_sanitize_order_by()` with whitelist regex.
+- **View**: Fixed **Path Traversal** vulnerability in `fst_view()` — added `realpath()` validation to ensure views cannot escape the project root. Also switched `extract()` to use `EXTR_SKIP` to prevent variable injection.
+- **HTTP**: Fixed **Open Redirect** vulnerability in `fst_redirect()` — blocked protocol-relative URLs (`//evil.com`) and added hostname validation for absolute URLs.
+- **Admin**: Fixed **XSS** vulnerability in flash message rendering — output is now escaped via `htmlspecialchars()` at the render point in `fst_admin_render_page()`.
+- **Admin**: Hardened **Plugin Install** endpoint — enforced HTTPS-only downloads and domain whitelist (GitHub only) to prevent arbitrary code injection.
+- **Compiler**: Replaced regex-based comment stripping with PHP's native `token_get_all()` tokenizer — prevents accidental removal of comment-like patterns inside string literals.
+- **Core**: Replaced `session_start()` with `session_status()` check to prevent duplicate session errors.
+- **Core**: Removed legacy `global` variables in favor of `fst_app()` single-source-of-truth state container.
+- **Database**: Simplified redundant double `try/catch` wrapping in database initialization.
+- **Database**: Fixed default identifier quoting fallback from `mysql` to `sqlite` (safest common denominator).
+- **View**: Added 13 additional MIME types (webp, woff2, gif, json, mp4, etc.) to static file server.
+
 ## [v0.1.0] - 2026-05-06
 - Initial release of FullStuck.php "Two Worlds" architecture.
 - Core router with middleware support.

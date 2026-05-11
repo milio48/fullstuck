@@ -1,5 +1,5 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) { session_start(); }
 define('FST_VERSION', '0.1.0');
 define('FST_DOCS_URL', 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v' . FST_VERSION . '.md');
 if (!defined('FST_ROOT_DIR')) {
@@ -38,14 +38,12 @@ function fst_is_safe_to_debug() {
     return $is_localhost || $is_admin_logged_in;
 }
 
-global $fst_config, $fst_pdo, $fst_routes, $fst_route_prefix, $fst_route_found;
 $config_content = @file_get_contents(FST_CONFIG_FILE);
 $decoded_config = $config_content ? json_decode($config_content, true) : null;
 fst_app('config', $decoded_config);
-$fst_config = $decoded_config; // Maintain backward compatibility for now
-$fst_routes = [];
-$fst_route_prefix = '';
-$fst_route_found = false;
+fst_app('routes', []);
+fst_app('route_prefix', '');
+fst_app('route_found', false);
 
 if ($decoded_config === null && file_exists(FST_CONFIG_FILE)) {
     if (function_exists('fst_abort')) fst_abort(500, "Failed to decode `fullstuck.json`. Check for syntax errors.");

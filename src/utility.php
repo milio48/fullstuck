@@ -71,6 +71,18 @@ function fst_validate($data, $rules) {
                     $errors[$field][] = "Bidang '{$field}' harus salah satu dari: " . implode(', ', $params) . ".";
                     $field_valid = false;
                 }
+            } elseif ($rule_name === 'min_value') {
+                $min_val = (float)($params[0] ?? 0);
+                if (!is_numeric($value) || (float)$value < $min_val) {
+                    $errors[$field][] = "Bidang '{$field}' harus bernilai minimal {$min_val}.";
+                    $field_valid = false;
+                }
+            } elseif ($rule_name === 'max_value') {
+                $max_val = (float)($params[0] ?? 0);
+                if (!is_numeric($value) || (float)$value > $max_val) {
+                    $errors[$field][] = "Bidang '{$field}' harus bernilai maksimal {$max_val}.";
+                    $field_valid = false;
+                }
             }
         }
         
