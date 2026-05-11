@@ -546,14 +546,25 @@ HTML;
     }
 
     function fst_check_integrity() {
+        // Perbaikan 2: Deteksi lokasi file core secara akurat (bahkan saat simulasi di folder test/)
         $file_path = FST_ROOT_DIR . '/fullstuck.php';
-        if (!file_exists($file_path)) return false;
+        if (!file_exists($file_path)) {
+            // Fallback jika dijalankan via php -S dari subfolder
+            $script_path = $_SERVER['SCRIPT_FILENAME'] ?? '';
+            if (basename($script_path) === 'fullstuck.php' && file_exists($script_path)) {
+                $file_path = $script_path;
+            } else {
+                return false;
+            }
+        }
         
         $content = file_get_contents($file_path);
         if (!preg_match('/FST_HASH:\s*([a-f0-9]{64})/', $content, $matches)) return false;
         
         $declared_hash = $matches[1];
-        $parts = explode(" */\n", $content, 2);
+        
+        // Perbaikan 1: Gunakan preg_split untuk bypass masalah CRLF (Windows) vs LF (Unix)
+        $parts = preg_split('/ \*\/\r?\n/', $content, 2);
         if (count($parts) !== 2) return false;
         
         $actual_hash = hash('sha256', $parts[1]);

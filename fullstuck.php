@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 1a399a761a187530c3e0e7c121f99a61b2fa5c86b0a7e16480289cade585aafe
+ * 💡 Version: 0.1.0 | FST_HASH: edcb21adda6716e87470fe4330511978f3bcab3b03b14e78962787e792bcdbdc
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); // Ambil selector target dan opsi history const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; // Lengkapi: Tambahkan class \'fst-loading\' ke elemen targetSelector const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); // Lengkapi: Dispatch event \'fst:unload\' ke document document.dispatchEvent(new Event(\'fst:unload\')); // Lengkapi: Ganti innerHTML targetElement dengan html dari response targetElement.innerHTML = html; // Lengkapi: Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector } if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } // Lengkapi: Eksekusi ulang tag <script> di dalam targetElement (jangan lupa skip script dengan id \'fst-spa-agent\') const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // Lengkapi: Dispatch event \'fst:load\' ke document document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { // Lengkapi: Hapus class \'fst-loading\' dari elemen targetSelector if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { // Lengkapi: Cek jika e.state && e.state.fstHtml && e.state.fstTarget tersedia. if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { // 1. Dispatch fst:unload document.dispatchEvent(new Event(\'fst:unload\')); // 2. Isi document.querySelector(e.state.fstTarget).innerHTML dengan e.state.fstHtml targetElement.innerHTML = e.state.fstHtml; // 3. Eksekusi ulang script di dalamnya (skip fst-spa-agent) const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // 4. Dispatch fst:load document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { // Jika state tidak ada, fallback jalankan: window.location.reload(); window.location.reload(); } }); // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
 
@@ -1499,14 +1499,24 @@ HTML;
     }
 
     function fst_check_integrity() {
+
         $file_path = FST_ROOT_DIR . '/fullstuck.php';
-        if (!file_exists($file_path)) return false;
+        if (!file_exists($file_path)) {
+
+            $script_path = $_SERVER['SCRIPT_FILENAME'] ?? '';
+            if (basename($script_path) === 'fullstuck.php' && file_exists($script_path)) {
+                $file_path = $script_path;
+            } else {
+                return false;
+            }
+        }
         
         $content = file_get_contents($file_path);
         if (!preg_match('/FST_HASH:\s*([a-f0-9]{64})/', $content, $matches)) return false;
         
         $declared_hash = $matches[1];
-        $parts = explode(" */\n", $content, 2);
+
+        $parts = preg_split('/ \*\/\r?\n/', $content, 2);
         if (count($parts) !== 2) return false;
         
         $actual_hash = hash('sha256', $parts[1]);
