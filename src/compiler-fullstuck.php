@@ -49,8 +49,8 @@ foreach ($files as $file) {
     $compiled_code .= trim($content) . "\n";
 }
 
-// Generate FIM Hash dari $compiled_code
-$fim_hash = hash('sha256', $compiled_code);
+// Generate FIM Hash dari $compiled_code (normalize ke LF agar konsisten lintas OS)
+$fim_hash = hash('sha256', str_replace("\r\n", "\n", $compiled_code));
 
 // Bentuk Output Akhir dengan Sintaks Header
 $output = "<?php\n";

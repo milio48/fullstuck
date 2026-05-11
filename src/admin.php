@@ -567,7 +567,7 @@ HTML;
         $parts = preg_split('/ \*\/\r?\n/', $content, 2);
         if (count($parts) !== 2) return false;
         
-        $actual_hash = hash('sha256', $parts[1]);
+        $actual_hash = hash('sha256', str_replace("\r\n", "\n", $parts[1]));
         return [
             'valid' => hash_equals($declared_hash, $actual_hash),
             'declared' => $declared_hash,
