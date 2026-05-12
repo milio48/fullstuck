@@ -198,21 +198,21 @@ function fst_extract_html_fragment($html, $selector = 'body') {
     $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_NOERROR | LIBXML_NOWARNING | LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
     libxml_clear_errors();
 
-    // Mini-parser selector ke XPath
-    $xpath_query = '//' . $selector; 
-    // [PATCH] Mencegah XPath Injection dengan Strict Whitelist
+    // [PATCH] Mencegah XPath Injection dengan Strict Regex & Whitelist
     if (str_starts_with($selector, '#')) {
         $id = substr($selector, 1);
+        if (!preg_match('/^[a-zA-Z0-9_\-]+$/', $id)) return $html; // Fallback jika format ID tidak valid
         $xpath_query = "//*[@id='{$id}']";
     } elseif (str_starts_with($selector, '.')) {
         $class = substr($selector, 1);
+        if (!preg_match('/^[a-zA-Z0-9_\-]+$/', $class)) return $html; // Fallback jika format Class tidak valid
         $xpath_query = "//*[contains(concat(' ', normalize-space(@class), ' '), ' {$class} ')]";
     } else {
         $allowed_tags = ['body', 'main', 'header', 'footer', 'div', 'section', 'article', 'nav', 'aside', 'span', 'p', 'form', 'table'];
         if (in_array(strtolower($selector), $allowed_tags)) {
             $xpath_query = '//' . strtolower($selector);
         } else {
-            return $html; // Fallback aman
+            return $html; 
         }
     }
 

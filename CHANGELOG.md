@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fix**: Enhanced `fst_redirect()` with `$allow_external` parameter and protocol-relative bypass fix.
 - **Build**: Improved `fst.js` minification in compiler to strip comments (// and /* */) properly.
 - **Improvement**: Updated `src/assets/fst.js` to use block comments for safer compilation.
+- **Security**: Patched XPath Injection vulnerability in `fst_extract_html_fragment()` with strict regex validation for ID and Class selectors.
 - **Fix**: Optional route parameter parsing order in `src/router.php`.
 
 ### Security (Code Review Hardening)
