@@ -1,5 +1,18 @@
 <?php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) { 
+    $is_https = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || 
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    
+    session_set_cookie_params([
+        'lifetime' => 0, 
+        'path' => '/',
+        'domain' => '',
+        'secure' => $is_https,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start(); 
+}
 define('FST_VERSION', '0.1.0');
 define('FST_DOCS_URL', 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v' . FST_VERSION . '.md');
 if (!defined('FST_ROOT_DIR')) {
@@ -33,6 +46,7 @@ function fst_app($key = null, $value = null) {
 }
 
 function fst_is_safe_to_debug() {
+    if (!fst_is_dev()) return false; // [PATCH] Mencegah leak stack-trace di production behind proxy
     $is_localhost = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']);
     $is_admin_logged_in = !empty($_SESSION['fst_admin_logged_in']);
     return $is_localhost || $is_admin_logged_in;
@@ -63,6 +77,7 @@ function _fst_error_handler($errno, $errstr, $errfile, $errline) {
 }
 
 function _fst_exception_handler($e) {
+    while (ob_get_level() > 0) { ob_end_clean(); } // [PATCH] Bersihkan buffer HTML parsial
     http_response_code(500);
     
     if (!fst_is_dev() || !fst_is_safe_to_debug()) {
@@ -184,13 +199,21 @@ function fst_extract_html_fragment($html, $selector = 'body') {
     libxml_clear_errors();
 
     // Mini-parser selector ke XPath
-    $xpath_query = '//' . $selector; // Default tag
+    $xpath_query = '//' . $selector; 
+    // [PATCH] Mencegah XPath Injection dengan Strict Whitelist
     if (str_starts_with($selector, '#')) {
         $id = substr($selector, 1);
         $xpath_query = "//*[@id='{$id}']";
     } elseif (str_starts_with($selector, '.')) {
         $class = substr($selector, 1);
         $xpath_query = "//*[contains(concat(' ', normalize-space(@class), ' '), ' {$class} ')]";
+    } else {
+        $allowed_tags = ['body', 'main', 'header', 'footer', 'div', 'section', 'article', 'nav', 'aside', 'span', 'p', 'form', 'table'];
+        if (in_array(strtolower($selector), $allowed_tags)) {
+            $xpath_query = '//' . strtolower($selector);
+        } else {
+            return $html; // Fallback aman
+        }
     }
 
     $xpath = new DOMXPath($dom);

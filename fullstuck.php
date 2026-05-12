@@ -3,13 +3,26 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: d18ba313cc8475f950f9e1b9c6cdbc5834848abb701fd321bc92a56fd4dc524f
+ * 💡 Version: 0.1.0 | FST_HASH: 57cec08ca16cc53eb9960b14d06b68daf25aff300edf051ddeef95d6a4b3ea27
  */
-define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\'));');
+define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\')); document.addEventListener(\'submit\', async function(e) { if (e.defaultPrevented) return; const form = e.target; if (form.hasAttribute(\'data-no-spa\') || form.classList.contains(\'no-spa\')) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = form.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = form.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const method = (form.getAttribute(\'method\') || \'GET\').toUpperCase(); const action = form.getAttribute(\'action\') || window.location.href; const formData = new FormData(form); const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; let fetchOptions = { method, headers }; let finalUrl = action; if (method === \'GET\') { const params = new URLSearchParams(formData); finalUrl = action.includes(\'?\') ? `${action}&${params.toString()}` : `${action}?${params.toString()}`; } else { fetchOptions.body = formData; } const response = await fetch(finalUrl, fetchOptions); if (response.redirected) { window.location.href = response.url; return; } if (!response.ok && response.status !== 400 && response.status !== 422) { window.location.href = finalUrl; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut && method === \'GET\') { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', finalUrl); } document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.reload(); } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } });');
 
 
 // FILE: core.php
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+if (session_status() === PHP_SESSION_NONE) { 
+    $is_https = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || 
+                (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+    
+    session_set_cookie_params([
+        'lifetime' => 0, 
+        'path' => '/',
+        'domain' => '',
+        'secure' => $is_https,
+        'httponly' => true,
+        'samesite' => 'Lax'
+    ]);
+    session_start(); 
+}
 define('FST_VERSION', '0.1.0');
 define('FST_DOCS_URL', 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v' . FST_VERSION . '.md');
 if (!defined('FST_ROOT_DIR')) {
@@ -43,6 +56,7 @@ function fst_app($key = null, $value = null) {
 }
 
 function fst_is_safe_to_debug() {
+    if (!fst_is_dev()) return false; 
     $is_localhost = in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1']);
     $is_admin_logged_in = !empty($_SESSION['fst_admin_logged_in']);
     return $is_localhost || $is_admin_logged_in;
@@ -73,6 +87,7 @@ function _fst_error_handler($errno, $errstr, $errfile, $errline) {
 }
 
 function _fst_exception_handler($e) {
+    while (ob_get_level() > 0) { ob_end_clean(); } 
     http_response_code(500);
     
     if (!fst_is_dev() || !fst_is_safe_to_debug()) {
@@ -195,12 +210,20 @@ function fst_extract_html_fragment($html, $selector = 'body') {
 
     
     $xpath_query = '//' . $selector; 
+    
     if (str_starts_with($selector, '#')) {
         $id = substr($selector, 1);
         $xpath_query = "//*[@id='{$id}']";
     } elseif (str_starts_with($selector, '.')) {
         $class = substr($selector, 1);
         $xpath_query = "//*[contains(concat(' ', normalize-space(@class), ' '), ' {$class} ')]";
+    } else {
+        $allowed_tags = ['body', 'main', 'header', 'footer', 'div', 'section', 'article', 'nav', 'aside', 'span', 'p', 'form', 'table'];
+        if (in_array(strtolower($selector), $allowed_tags)) {
+            $xpath_query = '//' . strtolower($selector);
+        } else {
+            return $html; 
+        }
     }
 
     $xpath = new DOMXPath($dom);
@@ -256,6 +279,12 @@ function fst_db_quote_ident($name) {
     $fst_config = fst_app('config');
     $driver = $fst_config['database']['driver'] ?? 'sqlite';
     $q = ($driver === 'pgsql') ? '"' : '`';
+    
+    
+    if (str_contains($name, '.')) {
+        $parts = explode('.', $name);
+        return $q . str_replace($q, $q . $q, $parts[0]) . $q . '.' . $q . str_replace($q, $q . $q, $parts[1]) . $q;
+    }
     return $q . str_replace($q, $q . $q, $name) . $q;
 }
 
@@ -323,6 +352,7 @@ function fst_db_insert($table, $data) {
 }
 
 function fst_db_update($table, $data, $conditions = []) {
+    if (empty($conditions)) return false; 
     if (empty($data)) return false;
     $t = fst_db_quote_ident($table);
     $set = [];
@@ -571,32 +601,30 @@ function _fst_match_static_routes() {
 
 function fst_run() {
     
+    if (!headers_sent()) {
+        header('X-Frame-Options: SAMEORIGIN');
+        header('X-Content-Type-Options: nosniff');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+    }
+
     ob_start();
     $handled = false;
     
-    
     $req = _fst_get_request_paths(); 
-    
-    
     if (_fst_is_protected_file($req['absolute_path'])) {
         fst_abort(404);
         $handled = true;
     }
-
     if (!$handled) {
-        
         if (_fst_serve_static_asset($req['uri_path'], $req['absolute_path'])) {
             $handled = true;
         }
     }
-    
     if (!$handled) {
-        
         if (_fst_match_static_routes()) {
             $handled = true;
         }
     }
-    
     
     if (!$handled && !fst_app('route_found')) {
         fst_abort(404);
@@ -604,19 +632,23 @@ function fst_run() {
     
     $output = ob_get_clean();
 
-    
     if (fst_is_spa()) {
         $target = fst_spa_target();
         $output = fst_extract_html_fragment($output, $target); 
     } 
-    
     else if (fst_config('spa.enabled', false)) {
         $script_id = fst_config('spa.script_id', 'fst-spa-agent');
         $req_header = fst_config('spa.header_request', 'X-FST-Request');
         $target_header = fst_config('spa.header_target', 'X-FST-Target');
         $inject_id = $script_id ? 'id="'.$script_id.'" data-req-header="'.$req_header.'" data-target-header="'.$target_header.'"' : '';
         $script_tag = "<script {$inject_id}>\n" . (defined('FST_SPA_JS_CODE') ? FST_SPA_JS_CODE : '') . "\n</script>";
-        $output = str_ireplace('</body>', $script_tag . '</body>', $output);
+        
+        
+        if (stripos($output, '</body>') !== false) {
+            $output = str_ireplace('</body>', $script_tag . "\n</body>", $output);
+        } else {
+            $output .= "\n" . $script_tag;
+        }
     }
 
     echo $output;
@@ -662,6 +694,11 @@ function fst_redirect($url, $code = 302, $allow_external = false) {
     $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
     
+    
+    if (str_starts_with($url, '//')) {
+        fst_abort(403, 'Protocol-relative redirect is not allowed.');
+    }
+
     if (preg_match('/^https?:\/\//', $url)) {
         if (!$allow_external) {
             $url_host = parse_url($url, PHP_URL_HOST);
@@ -695,7 +732,8 @@ function fst_flash_get($key, $default = null) { $message = $_SESSION['_flash'][$
 function fst_csrf_token() { if (empty($_SESSION['_csrf_token'])) $_SESSION['_csrf_token'] = bin2hex(random_bytes(32)); return $_SESSION['_csrf_token']; }
 function fst_csrf_field() { return '<input type="hidden" name="_token" value="' . fst_csrf_token() . '">'; }
 function fst_csrf_check() {
-    $submitted_token = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    $data = fst_request(); 
+    $submitted_token = $data['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
     if (!$submitted_token || !hash_equals(fst_csrf_token(), $submitted_token)) fst_abort(403, 'Invalid CSRF token.');
 }
 
@@ -706,7 +744,23 @@ function fst_upload($key, $folder, $options = []) {
     $allowed_types = $options['allowed_types'] ?? [];
     if ($file['size'] > $max_size_kb * 1024) return ['success' => false, 'error' => "File is too large (max {$max_size_kb} KB).", 'path' => null];
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!empty($allowed_types) && !in_array($ext, $allowed_types)) return ['success' => false, 'error' => "Invalid file type. Allowed: " . implode(', ', $allowed_types), 'path' => null];
+    if (!empty($options['allowed_types']) && !in_array($ext, $options['allowed_types'])) return ['success' => false, 'error' => "Extension `{$ext}` is not allowed.", 'path' => null];
+    
+    
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $actual_mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (strpos($actual_mime, 'php') !== false || $actual_mime === 'text/x-php') {
+            return ['success' => false, 'error' => "Security Error: Malicious file signature detected.", 'path' => null];
+        }
+        
+        if (!empty($options['allowed_mimes']) && !in_array($actual_mime, $options['allowed_mimes'])) {
+             return ['success' => false, 'error' => "Invalid MIME type: " . $actual_mime, 'path' => null];
+        }
+    }
+
     $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($file['name'], ".".$ext));
     $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
     

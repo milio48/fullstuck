@@ -39,6 +39,12 @@ function fst_db_quote_ident($name) {
     $fst_config = fst_app('config');
     $driver = $fst_config['database']['driver'] ?? 'sqlite';
     $q = ($driver === 'pgsql') ? '"' : '`';
+    
+    // [PATCH] Dukungan table.column
+    if (str_contains($name, '.')) {
+        $parts = explode('.', $name);
+        return $q . str_replace($q, $q . $q, $parts[0]) . $q . '.' . $q . str_replace($q, $q . $q, $parts[1]) . $q;
+    }
     return $q . str_replace($q, $q . $q, $name) . $q;
 }
 
@@ -106,6 +112,7 @@ function fst_db_insert($table, $data) {
 }
 
 function fst_db_update($table, $data, $conditions = []) {
+    if (empty($conditions)) return false; // [PATCH] Mencegah mass-update
     if (empty($data)) return false;
     $t = fst_db_quote_ident($table);
     $set = [];

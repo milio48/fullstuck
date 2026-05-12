@@ -211,53 +211,55 @@ function _fst_match_static_routes() {
 }
 
 function fst_run() {
-    
+    // [PATCH] Security Headers Global
+    if (!headers_sent()) {
+        header('X-Frame-Options: SAMEORIGIN');
+        header('X-Content-Type-Options: nosniff');
+        header('Referrer-Policy: strict-origin-when-cross-origin');
+    }
+
     ob_start();
     $handled = false;
     
-    // 1. Ambil path dan URI yang sudah dibersihkan
     $req = _fst_get_request_paths(); 
-    
-    // 2. Keamanan: Cegah akses file krusial (fullstuck.php, config)
     if (_fst_is_protected_file($req['absolute_path'])) {
         fst_abort(404);
         $handled = true;
     }
-
     if (!$handled) {
-        // 3. Prioritas #1: Serve Static Asset (gambar, css, js)
         if (_fst_serve_static_asset($req['uri_path'], $req['absolute_path'])) {
             $handled = true;
         }
     }
-    
     if (!$handled) {
-        // 4. Prioritas #2: Static Routing (Whitelist route & Admin)
         if (_fst_match_static_routes()) {
             $handled = true;
         }
     }
     
-    // 6. Jika semua gagal, berikan 404
     if (!$handled && !fst_app('route_found')) {
         fst_abort(404);
     }
     
     $output = ob_get_clean();
 
-    // Eksekusi Clipping HTML jika ini permintaan SPA
     if (fst_is_spa()) {
         $target = fst_spa_target();
         $output = fst_extract_html_fragment($output, $target); 
     } 
-    // Jika bukan request SPA, tapi SPA mode aktif, injeksi Javascript-nya
     else if (fst_config('spa.enabled', false)) {
         $script_id = fst_config('spa.script_id', 'fst-spa-agent');
         $req_header = fst_config('spa.header_request', 'X-FST-Request');
         $target_header = fst_config('spa.header_target', 'X-FST-Target');
         $inject_id = $script_id ? 'id="'.$script_id.'" data-req-header="'.$req_header.'" data-target-header="'.$target_header.'"' : '';
         $script_tag = "<script {$inject_id}>\n" . (defined('FST_SPA_JS_CODE') ? FST_SPA_JS_CODE : '') . "\n</script>";
-        $output = str_ireplace('</body>', $script_tag . '</body>', $output);
+        
+        // [PATCH] Safe SPA Script Injection Fallback
+        if (stripos($output, '</body>') !== false) {
+            $output = str_ireplace('</body>', $script_tag . "\n</body>", $output);
+        } else {
+            $output .= "\n" . $script_tag;
+        }
     }
 
     echo $output;

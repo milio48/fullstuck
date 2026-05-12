@@ -38,10 +38,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FIM**: Fixed `fst_check_integrity()` failing on Windows due to CRLF line endings — replaced `explode(" */\n", ...)` with `preg_split` to handle both `\r\n` and `\n`.
 - **FIM**: Fixed `fst_check_integrity()` unable to locate `fullstuck.php` when running `php -S` from test subfolders — added `$_SERVER['SCRIPT_FILENAME']` fallback for path resolution.
 - **Security**: Implemented `session_regenerate_id(true)` on admin login to prevent **Session Fixation**.
-- **Security**: Implemented **Strict Middleware Mode** — framework now aborts (500) if a middleware fails to return a value or call `$next()`.
-- **Security**: Enhanced `fst_redirect()` with `$allow_external` parameter (default: false) to prevent **Open Redirects**.
-- **Core**: Reordered bootstrap sequence to load `fst-plugins/` before route files.
-- **SPA**: Added `Content-Type` validation to the SPA agent — forces full page reload if response is not `text/html`.
+- **Security**: Hardened session cookies (HttpOnly, Secure, SameSite=Lax).
+- **Security**: Implemented deep MIME-type verification for file uploads via `finfo`.
+- **Security**: Added XPath injection protection with strict tag whitelist in HTML extractor.
+- **Security**: Added global security headers (`X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`).
+- **Database**: Added mass-update protection in `fst_db_update()` and `table.column` identifier support.
+- **SPA**: Implemented **SPA Form Submission** interceptor in `fst.js` (supports GET/POST).
+- **SPA**: Improved script injection fallback for HTML without `</body>` tag.
+- **Fix**: Enhanced `fst_redirect()` with `$allow_external` parameter and protocol-relative bypass fix.
 - **Build**: Improved `fst.js` minification in compiler to strip comments (// and /* */) properly.
 - **Improvement**: Updated `src/assets/fst.js` to use block comments for safer compilation.
 - **Fix**: Optional route parameter parsing order in `src/router.php`.

@@ -38,6 +38,11 @@ function fst_redirect($url, $code = 302, $allow_external = false) {
     $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
     
+    // [PATCH] Cegah Protocol-Relative URL Bypass (e.g., //evil.com)
+    if (str_starts_with($url, '//')) {
+        fst_abort(403, 'Protocol-relative redirect is not allowed.');
+    }
+
     if (preg_match('/^https?:\/\//', $url)) {
         if (!$allow_external) {
             $url_host = parse_url($url, PHP_URL_HOST);
@@ -71,7 +76,8 @@ function fst_flash_get($key, $default = null) { $message = $_SESSION['_flash'][$
 function fst_csrf_token() { if (empty($_SESSION['_csrf_token'])) $_SESSION['_csrf_token'] = bin2hex(random_bytes(32)); return $_SESSION['_csrf_token']; }
 function fst_csrf_field() { return '<input type="hidden" name="_token" value="' . fst_csrf_token() . '">'; }
 function fst_csrf_check() {
-    $submitted_token = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    $data = fst_request(); // [PATCH] Mendukung PHP://input (JSON)
+    $submitted_token = $data['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
     if (!$submitted_token || !hash_equals(fst_csrf_token(), $submitted_token)) fst_abort(403, 'Invalid CSRF token.');
 }
 
@@ -82,7 +88,23 @@ function fst_upload($key, $folder, $options = []) {
     $allowed_types = $options['allowed_types'] ?? [];
     if ($file['size'] > $max_size_kb * 1024) return ['success' => false, 'error' => "File is too large (max {$max_size_kb} KB).", 'path' => null];
     $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!empty($allowed_types) && !in_array($ext, $allowed_types)) return ['success' => false, 'error' => "Invalid file type. Allowed: " . implode(', ', $allowed_types), 'path' => null];
+    if (!empty($options['allowed_types']) && !in_array($ext, $options['allowed_types'])) return ['success' => false, 'error' => "Extension `{$ext}` is not allowed.", 'path' => null];
+    
+    // [PATCH] Validasi MIME Type Asli
+    if (function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        $actual_mime = finfo_file($finfo, $file['tmp_name']);
+        finfo_close($finfo);
+
+        if (strpos($actual_mime, 'php') !== false || $actual_mime === 'text/x-php') {
+            return ['success' => false, 'error' => "Security Error: Malicious file signature detected.", 'path' => null];
+        }
+        
+        if (!empty($options['allowed_mimes']) && !in_array($actual_mime, $options['allowed_mimes'])) {
+             return ['success' => false, 'error' => "Invalid MIME type: " . $actual_mime, 'path' => null];
+        }
+    }
+
     $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($file['name'], ".".$ext));
     $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
     
