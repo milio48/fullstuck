@@ -34,23 +34,24 @@ function e($str) { return fst_escape($str); }
 
 function fst_json($data, $status = 200) { fst_status_code($status); header('Content-Type: application/json'); echo json_encode($data); die(); }
 function fst_text($string, $status = 200) { fst_status_code($status); header('Content-Type: text/plain'); echo $string; die(); }
-function fst_redirect($url, $code = 302) {
+function fst_redirect($url, $code = 302, $allow_external = false) {
     $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
+    
     if (preg_match('/^https?:\/\//', $url)) {
-        // Absolute URL — validasi bahwa hostname-nya sama untuk mencegah Open Redirect
-        $url_host = parse_url($url, PHP_URL_HOST);
-        $self_host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-        // Hapus port dari self_host jika ada
-        $self_host = preg_replace('/:\d+$/', '', $self_host);
-        if ($url_host !== null && strtolower($url_host) !== strtolower($self_host)) {
-            fst_abort(403, 'Redirect to external domain is not allowed.');
+        if (!$allow_external) {
+            $url_host = parse_url($url, PHP_URL_HOST);
+            $self_host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+            $self_host = preg_replace('/:\d+$/', '', $self_host);
+            if ($url_host !== null && strtolower($url_host) !== strtolower($self_host)) {
+                fst_abort(403, 'Redirect to external domain is not allowed. Use fst_redirect($url, 302, true) to allow.');
+            }
         }
     } else {
-        // Relative URL — cegah protocol-relative (//evil.com)
         $url = '/' . ltrim($url, '/');
         $url = rtrim($base_path, '/') . $url;
     }
+    
     if (fst_is_spa()) {
         header("X-FST-Redirect: " . $url);
         die();

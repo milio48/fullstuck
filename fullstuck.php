@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 141f7e680f7116de2abb7a1cfa4d97dc0c37690406bbe00c90502ccb889e0175
+ * 💡 Version: 0.1.0 | FST_HASH: d18ba313cc8475f950f9e1b9c6cdbc5834848abb701fd321bc92a56fd4dc524f
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\'));');
 
@@ -658,23 +658,24 @@ function e($str) { return fst_escape($str); }
 
 function fst_json($data, $status = 200) { fst_status_code($status); header('Content-Type: application/json'); echo json_encode($data); die(); }
 function fst_text($string, $status = 200) { fst_status_code($status); header('Content-Type: text/plain'); echo $string; die(); }
-function fst_redirect($url, $code = 302) {
+function fst_redirect($url, $code = 302, $allow_external = false) {
     $fst_config = fst_app('config');
     $base_path = $fst_config['routing']['base_path'] ?? '/';
+    
     if (preg_match('/^https?:\/\//', $url)) {
-        
-        $url_host = parse_url($url, PHP_URL_HOST);
-        $self_host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
-        
-        $self_host = preg_replace('/:\d+$/', '', $self_host);
-        if ($url_host !== null && strtolower($url_host) !== strtolower($self_host)) {
-            fst_abort(403, 'Redirect to external domain is not allowed.');
+        if (!$allow_external) {
+            $url_host = parse_url($url, PHP_URL_HOST);
+            $self_host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+            $self_host = preg_replace('/:\d+$/', '', $self_host);
+            if ($url_host !== null && strtolower($url_host) !== strtolower($self_host)) {
+                fst_abort(403, 'Redirect to external domain is not allowed. Use fst_redirect($url, 302, true) to allow.');
+            }
         }
     } else {
-        
         $url = '/' . ltrim($url, '/');
         $url = rtrim($base_path, '/') . $url;
     }
+    
     if (fst_is_spa()) {
         header("X-FST-Redirect: " . $url);
         die();
@@ -1857,6 +1858,16 @@ HTML;
 
 // FILE: bootstrap.php
 $fst_config = fst_app('config');
+
+
+$plugin_dir = FST_ROOT_DIR . '/fst-plugins';
+if (is_dir($plugin_dir)) {
+    foreach (glob($plugin_dir . '/*.php') as $plugin) {
+        require_once $plugin;
+    }
+}
+
+
 $routes_files = (array) ($fst_config['routing']['routes_file'] ?? ['router.php']);
 foreach ($routes_files as $file) {
     if (file_exists(FST_ROOT_DIR . '/' . $file)) {
@@ -1866,13 +1877,6 @@ foreach ($routes_files as $file) {
     }
 }
 
-
-$plugin_dir = FST_ROOT_DIR . '/fst-plugins';
-if (is_dir($plugin_dir)) {
-    foreach (glob($plugin_dir . '/*.php') as $plugin) {
-        require_once $plugin;
-    }
-}
 
 if (php_sapi_name() !== 'cli') {
     fst_run();

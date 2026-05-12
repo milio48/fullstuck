@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **FIM**: Fixed `fst_check_integrity()` unable to locate `fullstuck.php` when running `php -S` from test subfolders — added `$_SERVER['SCRIPT_FILENAME']` fallback for path resolution.
 - **Security**: Implemented `session_regenerate_id(true)` on admin login to prevent **Session Fixation**.
 - **Security**: Implemented **Strict Middleware Mode** — framework now aborts (500) if a middleware fails to return a value or call `$next()`.
+- **Security**: Enhanced `fst_redirect()` with `$allow_external` parameter (default: false) to prevent **Open Redirects**.
+- **Core**: Reordered bootstrap sequence to load `fst-plugins/` before route files.
 - **SPA**: Added `Content-Type` validation to the SPA agent — forces full page reload if response is not `text/html`.
 - **Build**: Improved `fst.js` minification in compiler to strip comments (// and /* */) properly.
 - **Improvement**: Updated `src/assets/fst.js` to use block comments for safer compilation.
