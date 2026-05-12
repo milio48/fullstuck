@@ -40,10 +40,10 @@ function fst_is_safe_to_debug() {
 
 $config_content = @file_get_contents(FST_CONFIG_FILE);
 $decoded_config = $config_content ? json_decode($config_content, true) : null;
-fst_app('config', $decoded_config);
-fst_app('routes', []);
-fst_app('route_prefix', '');
-fst_app('route_found', false);
+if (fst_app('config') === null) fst_app('config', $decoded_config);
+if (fst_app('routes') === null) fst_app('routes', []);
+if (fst_app('route_prefix') === null) fst_app('route_prefix', '');
+if (fst_app('route_found') === null) fst_app('route_found', false);
 
 if ($decoded_config === null && file_exists(FST_CONFIG_FILE)) {
     if (function_exists('fst_abort')) fst_abort(500, "Failed to decode `fullstuck.json`. Check for syntax errors.");

@@ -44,22 +44,24 @@ function fst_route($method, $path, $callback, $middleware = []) {
     $shortcuts = $fst_config['routing']['regex_shortcuts'] ?? ['i'=>'([0-9]+)','a'=>'([a-zA-Z0-9]+)','s'=>'([a-zA-Z0-9\-]+)','any'=>'([^/]+)'];
     $default_regex = $shortcuts['any'] ?? '([^/]+)';
 
+    // 1. Eksekusi pola parameter opsional DULU
+    $final_pattern = preg_replace_callback(
+        '/\{([a-zA-Z0-9_]+)(?::([a-z]))?\}\?/',
+        function ($matches) use ($shortcuts, $default_regex) {
+             $type = $matches[2] ?? 'any';
+             $regex = $shortcuts[$type] ?? $default_regex;
+             $regex = str_starts_with($regex, '(') ? $regex : '(' . $regex . ')';
+             return "(?:/" . $regex . ")?";
+        },
+        $path_for_regex);
+    
+    // 2. Eksekusi pola parameter wajib
     $final_pattern = preg_replace_callback(
         '/\{([a-zA-Z0-9_]+)(?::([a-z]))?\}/',
         function ($matches) use ($shortcuts, $default_regex) {
              $type = $matches[2] ?? 'any';
              $regex = $shortcuts[$type] ?? $default_regex;
              return str_starts_with($regex, '(') ? $regex : '(' . $regex . ')';
-        },
-        $path_for_regex);
-    
-    $final_pattern = preg_replace_callback(
-        '/\{([a-zA-Z0-9_]+)(?::([a-z]))?\}(\?)/',
-        function ($matches) use ($shortcuts, $default_regex) {
-             $type = $matches[2] ?? 'any';
-             $regex = $shortcuts[$type] ?? $default_regex;
-             $regex = str_starts_with($regex, '(') ? $regex : '(' . $regex . ')';
-             return "(?:/" . $regex . ")?";
         },
         $final_pattern);
 

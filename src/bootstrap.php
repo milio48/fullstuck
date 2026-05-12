@@ -17,6 +17,8 @@ if (is_dir($plugin_dir)) {
     }
 }
 
-fst_run();
+if (php_sapi_name() !== 'cli') {
+    fst_run();
+}
 ?>
 

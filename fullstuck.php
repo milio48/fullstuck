@@ -3,9 +3,9 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 66bbdc254857a140c03127bf7d0aa0d89b5e4f03a625e0a7ea726a12ec25d169
+ * 💡 Version: 0.1.0 | FST_HASH: 9a8dce5340f37bf5d404162d4c6f8c5da4abd882ca21e6b4652f88da5d1a087b
  */
-define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); // Ambil selector target dan opsi history const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; // Lengkapi: Tambahkan class \'fst-loading\' ke elemen targetSelector const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); // Lengkapi: Dispatch event \'fst:unload\' ke document document.dispatchEvent(new Event(\'fst:unload\')); // Lengkapi: Ganti innerHTML targetElement dengan html dari response targetElement.innerHTML = html; // Lengkapi: Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector } if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } // Lengkapi: Eksekusi ulang tag <script> di dalam targetElement (jangan lupa skip script dengan id \'fst-spa-agent\') const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // Lengkapi: Dispatch event \'fst:load\' ke document document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { // Lengkapi: Hapus class \'fst-loading\' dari elemen targetSelector if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { // Lengkapi: Cek jika e.state && e.state.fstHtml && e.state.fstTarget tersedia. if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { // 1. Dispatch fst:unload document.dispatchEvent(new Event(\'fst:unload\')); // 2. Isi document.querySelector(e.state.fstTarget).innerHTML dengan e.state.fstHtml targetElement.innerHTML = e.state.fstHtml; // 3. Eksekusi ulang script di dalamnya (skip fst-spa-agent) const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\') return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // 4. Dispatch fst:load document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { // Jika state tidak ada, fallback jalankan: window.location.reload(); window.location.reload(); } }); // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
+define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); // Ambil selector target dan opsi history const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; // Lengkapi: Tambahkan class \'fst-loading\' ke elemen targetSelector const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); // Lengkapi: Dispatch event \'fst:unload\' ke document document.dispatchEvent(new Event(\'fst:unload\')); // Lengkapi: Ganti innerHTML targetElement dengan html dari response targetElement.innerHTML = html; // Lengkapi: Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector } if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } // Lengkapi: Eksekusi ulang tag <script> di dalam targetElement (jangan lupa skip script dengan id \'fst-spa-agent\') const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // Lengkapi: Dispatch event \'fst:load\' ke document document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { // Lengkapi: Hapus class \'fst-loading\' dari elemen targetSelector if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { // Lengkapi: Cek jika e.state && e.state.fstHtml && e.state.fstTarget tersedia. if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { // 1. Dispatch fst:unload document.dispatchEvent(new Event(\'fst:unload\')); // 2. Isi document.querySelector(e.state.fstTarget).innerHTML dengan e.state.fstHtml targetElement.innerHTML = e.state.fstHtml; // 3. Eksekusi ulang script di dalamnya (skip fst-spa-agent) const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); // 4. Dispatch fst:load document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { // Jika state tidak ada, fallback jalankan: window.location.reload(); window.location.reload(); } }); // Initial load event document.dispatchEvent(new Event(\'fst:load\'));');
 
 
 // FILE: core.php
@@ -50,10 +50,10 @@ function fst_is_safe_to_debug() {
 
 $config_content = @file_get_contents(FST_CONFIG_FILE);
 $decoded_config = $config_content ? json_decode($config_content, true) : null;
-fst_app('config', $decoded_config);
-fst_app('routes', []);
-fst_app('route_prefix', '');
-fst_app('route_found', false);
+if (fst_app('config') === null) fst_app('config', $decoded_config);
+if (fst_app('routes') === null) fst_app('routes', []);
+if (fst_app('route_prefix') === null) fst_app('route_prefix', '');
+if (fst_app('route_found') === null) fst_app('route_found', false);
 
 if ($decoded_config === null && file_exists(FST_CONFIG_FILE)) {
     if (function_exists('fst_abort')) fst_abort(500, "Failed to decode `fullstuck.json`. Check for syntax errors.");
@@ -403,22 +403,24 @@ function fst_route($method, $path, $callback, $middleware = []) {
     $shortcuts = $fst_config['routing']['regex_shortcuts'] ?? ['i'=>'([0-9]+)','a'=>'([a-zA-Z0-9]+)','s'=>'([a-zA-Z0-9\-]+)','any'=>'([^/]+)'];
     $default_regex = $shortcuts['any'] ?? '([^/]+)';
 
+    
+    $final_pattern = preg_replace_callback(
+        '/\{([a-zA-Z0-9_]+)(?::([a-z]))?\}\?/',
+        function ($matches) use ($shortcuts, $default_regex) {
+             $type = $matches[2] ?? 'any';
+             $regex = $shortcuts[$type] ?? $default_regex;
+             $regex = str_starts_with($regex, '(') ? $regex : '(' . $regex . ')';
+             return "(?:/" . $regex . ")?";
+        },
+        $path_for_regex);
+    
+    
     $final_pattern = preg_replace_callback(
         '/\{([a-zA-Z0-9_]+)(?::([a-z]))?\}/',
         function ($matches) use ($shortcuts, $default_regex) {
              $type = $matches[2] ?? 'any';
              $regex = $shortcuts[$type] ?? $default_regex;
              return str_starts_with($regex, '(') ? $regex : '(' . $regex . ')';
-        },
-        $path_for_regex);
-    
-    $final_pattern = preg_replace_callback(
-        '/\{([a-zA-Z0-9_]+)(?::([a-z]))?\}(\?)/',
-        function ($matches) use ($shortcuts, $default_regex) {
-             $type = $matches[2] ?? 'any';
-             $regex = $shortcuts[$type] ?? $default_regex;
-             $regex = str_starts_with($regex, '(') ? $regex : '(' . $regex . ')';
-             return "(?:/" . $regex . ")?";
         },
         $final_pattern);
 
@@ -692,7 +694,10 @@ function fst_flash_get($key, $default = null) { $message = $_SESSION['_flash'][$
 
 function fst_csrf_token() { if (empty($_SESSION['_csrf_token'])) $_SESSION['_csrf_token'] = bin2hex(random_bytes(32)); return $_SESSION['_csrf_token']; }
 function fst_csrf_field() { return '<input type="hidden" name="_token" value="' . fst_csrf_token() . '">'; }
-function fst_csrf_check() { $submitted_token = $_POST['_token'] ?? $_GET['_token'] ?? null; if (!$submitted_token || !hash_equals(fst_csrf_token(), $submitted_token)) fst_abort(403, 'Invalid CSRF token.'); }
+function fst_csrf_check() {
+    $submitted_token = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    if (!$submitted_token || !hash_equals(fst_csrf_token(), $submitted_token)) fst_abort(403, 'Invalid CSRF token.');
+}
 
 function fst_upload($key, $folder, $options = []) {
     $file = fst_file($key);
@@ -705,10 +710,17 @@ function fst_upload($key, $folder, $options = []) {
     $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($file['name'], ".".$ext));
     $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
     
-    $destination_folder = FST_ROOT_DIR . '/' . trim($folder, '/');
-    $destination_path = $destination_folder . '/' . $filename;
-    $public_path = trim($folder, '/') . '/' . $filename;
+    $destination_folder = rtrim(FST_ROOT_DIR . '/' . trim($folder, '/'), '/');
     if (!is_dir($destination_folder) && !mkdir($destination_folder, 0755, true)) return ['success' => false, 'error' => "Failed to create upload directory.", 'path' => null];
+    
+    
+    $real_destination = realpath($destination_folder);
+    if (!$real_destination || !str_starts_with($real_destination, realpath(FST_ROOT_DIR))) {
+        return ['success' => false, 'error' => 'Security Error: Invalid upload directory path.', 'path' => null];
+    }
+    
+    $destination_path = $real_destination . DIRECTORY_SEPARATOR . $filename;
+    $public_path = trim($folder, '/') . '/' . $filename;
     if (move_uploaded_file($file['tmp_name'], $destination_path)) return ['success' => true, 'path' => $public_path, 'error' => null];
     else return ['success' => false, 'error' => 'Failed to move uploaded file.', 'path' => null];
 }
@@ -1861,4 +1873,6 @@ if (is_dir($plugin_dir)) {
     }
 }
 
-fst_run();
+if (php_sapi_name() !== 'cli') {
+    fst_run();
+}

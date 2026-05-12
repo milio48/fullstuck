@@ -36,7 +36,7 @@ document.addEventListener('click', async function(e) {
         // Lengkapi: Eksekusi ulang tag <script> di dalam targetElement (jangan lupa skip script dengan id 'fst-spa-agent')
         const scripts = targetElement.querySelectorAll('script');
         scripts.forEach(oldScript => {
-            if (oldScript.id === 'fst-spa-agent') return;
+            if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
             const newScript = document.createElement('script');
             Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
             newScript.appendChild(document.createTextNode(oldScript.innerHTML));
@@ -65,7 +65,7 @@ window.addEventListener('popstate', function(e) {
             // 3. Eksekusi ulang script di dalamnya (skip fst-spa-agent)
             const scripts = targetElement.querySelectorAll('script');
             scripts.forEach(oldScript => {
-                if (oldScript.id === 'fst-spa-agent') return;
+                if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
                 const newScript = document.createElement('script');
                 Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));

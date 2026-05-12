@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compiler**: Fixed aggressive PHP tag removal that corrupted string literals in source files (e.g., scaffolding templates in `install.php`).
 - **FIM**: Fixed `fst_check_integrity()` failing on Windows due to CRLF line endings — replaced `explode(" */\n", ...)` with `preg_split` to handle both `\r\n` and `\n`.
 - **FIM**: Fixed `fst_check_integrity()` unable to locate `fullstuck.php` when running `php -S` from test subfolders — added `$_SERVER['SCRIPT_FILENAME']` fallback for path resolution.
+- **Fix**: Optional route parameter parsing order in `src/router.php`.
 
 ### Security (Code Review Hardening)
 - **Database**: Fixed **SQL Injection** vulnerability in `fst_db_select()` `order_by` option — user input is now sanitized via `_fst_sanitize_order_by()` with whitelist regex.
@@ -50,6 +51,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Database**: Simplified redundant double `try/catch` wrapping in database initialization.
 - **Database**: Fixed default identifier quoting fallback from `mysql` to `sqlite` (safest common denominator).
 - **View**: Added 13 additional MIME types (webp, woff2, gif, json, mp4, etc.) to static file server.
+- **Security**: Hardened CSRF check (removed GET support, added header support) to prevent leakage.
+- **Security**: Added `realpath` validation in `fst_upload()` to prevent path traversal.
+- **Security**: Hardened `fst_db_select()` against SQL injection in `order_by` clause.
+- **Security**: Prevented path traversal and variable injection in `fst_view()`.
+- **Security**: Implemented open redirect protection in `fst_redirect()`.
+- **Security**: Hardened plugin installation with HTTPS requirement and domain white-listing.
+
+### Features & Improvements
+- **Feature**: Added `data-spa-ignore` support for scripts in SPA agent.
+- **Feature**: Added `min_value` and `max_value` validation rules.
+- **Architecture**: Disabled auto-run in CLI mode to support unit testing.
+- **Architecture**: Improved state initialization to prevent resets on multiple includes.
+- **Improvement**: Replaced regex-based comment stripping in compiler with `token_get_all()`.
+- **Improvement**: Expanded MIME types for modern static assets.
 
 ## [v0.1.0] - 2026-05-06
 - Initial release of FullStuck.php "Two Worlds" architecture.

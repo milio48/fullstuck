@@ -69,7 +69,10 @@ function fst_flash_get($key, $default = null) { $message = $_SESSION['_flash'][$
 
 function fst_csrf_token() { if (empty($_SESSION['_csrf_token'])) $_SESSION['_csrf_token'] = bin2hex(random_bytes(32)); return $_SESSION['_csrf_token']; }
 function fst_csrf_field() { return '<input type="hidden" name="_token" value="' . fst_csrf_token() . '">'; }
-function fst_csrf_check() { $submitted_token = $_POST['_token'] ?? $_GET['_token'] ?? null; if (!$submitted_token || !hash_equals(fst_csrf_token(), $submitted_token)) fst_abort(403, 'Invalid CSRF token.'); }
+function fst_csrf_check() {
+    $submitted_token = $_POST['_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
+    if (!$submitted_token || !hash_equals(fst_csrf_token(), $submitted_token)) fst_abort(403, 'Invalid CSRF token.');
+}
 
 function fst_upload($key, $folder, $options = []) {
     $file = fst_file($key);
@@ -82,10 +85,17 @@ function fst_upload($key, $folder, $options = []) {
     $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($file['name'], ".".$ext));
     $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
     
-    $destination_folder = FST_ROOT_DIR . '/' . trim($folder, '/');
-    $destination_path = $destination_folder . '/' . $filename;
-    $public_path = trim($folder, '/') . '/' . $filename;
+    $destination_folder = rtrim(FST_ROOT_DIR . '/' . trim($folder, '/'), '/');
     if (!is_dir($destination_folder) && !mkdir($destination_folder, 0755, true)) return ['success' => false, 'error' => "Failed to create upload directory.", 'path' => null];
+    
+    // Keamanan Path Traversal
+    $real_destination = realpath($destination_folder);
+    if (!$real_destination || !str_starts_with($real_destination, realpath(FST_ROOT_DIR))) {
+        return ['success' => false, 'error' => 'Security Error: Invalid upload directory path.', 'path' => null];
+    }
+    
+    $destination_path = $real_destination . DIRECTORY_SEPARATOR . $filename;
+    $public_path = trim($folder, '/') . '/' . $filename;
     if (move_uploaded_file($file['tmp_name'], $destination_path)) return ['success' => true, 'path' => $public_path, 'error' => null];
     else return ['success' => false, 'error' => 'Failed to move uploaded file.', 'path' => null];
 }
