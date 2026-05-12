@@ -185,17 +185,16 @@ function _fst_match_static_routes() {
                         
                         // --- MAGIC FULLSTUCK (BACKWARD COMPATIBILITY) ---
                         // Jika user pakai gaya lama (me-return false untuk stop)
+                        // Jika middleware mengembalikan false secara eksplisit, hentikan.
                         if ($result === false) {
                             return false;
                         }
                         
-                        // Jika user pakai gaya lama tapi mengizinkan lewat (lupa panggil $next)
-                        // Atau jika user tidak memanggil $next() dan tidak mengembalikan apapun
+                        // STRICT MODE: Jika middleware tidak memanggil $next() dan hanya mengembalikan null (lupa return), lemparkan error 500!
                         if (!$called && $result === null) {
-                            return $current_next(); 
+                            fst_abort(500, "Middleware Logic Error: Middleware did not explicitly return a value or call \$next(). Security check failed."); 
                         }
-
-                        // Jika user pakai gaya baru (mengembalikan $next())
+                        
                         return $result;
                     };
                 }

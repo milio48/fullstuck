@@ -64,6 +64,8 @@ HTML;
         $hashed_password = $fst_config['admin']['password'] ?? '';
 
         if (password_verify($password, $hashed_password)) {
+            // Mencegah Session Fixation
+            session_regenerate_id(true);
             $_SESSION['fst_admin_logged_in'] = true;
             fst_redirect($admin_base);
         } else {

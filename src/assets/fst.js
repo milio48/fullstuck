@@ -18,6 +18,13 @@ document.addEventListener('click', async function(e) {
         const headers = { [reqHeader]: 'true', [targetHeader]: targetSelector };
         const response = await fetch(link.href, { headers });
         if (!response.ok) { window.location.href = link.href; return; }
+
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('text/html')) {
+            window.location.href = link.href;
+            return;
+        }
+
         const html = await response.text();
 
         if (!targetElement) throw new Error('Target not found');

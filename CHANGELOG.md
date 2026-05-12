@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compiler**: Fixed aggressive PHP tag removal that corrupted string literals in source files (e.g., scaffolding templates in `install.php`).
 - **FIM**: Fixed `fst_check_integrity()` failing on Windows due to CRLF line endings — replaced `explode(" */\n", ...)` with `preg_split` to handle both `\r\n` and `\n`.
 - **FIM**: Fixed `fst_check_integrity()` unable to locate `fullstuck.php` when running `php -S` from test subfolders — added `$_SERVER['SCRIPT_FILENAME']` fallback for path resolution.
+- **Security**: Implemented `session_regenerate_id(true)` on admin login to prevent **Session Fixation**.
+- **Security**: Implemented **Strict Middleware Mode** — framework now aborts (500) if a middleware fails to return a value or call `$next()`.
+- **SPA**: Added `Content-Type` validation to the SPA agent — forces full page reload if response is not `text/html`.
 - **Build**: Improved `fst.js` minification in compiler to strip comments (// and /* */) properly.
 - **Improvement**: Updated `src/assets/fst.js` to use block comments for safer compilation.
 - **Fix**: Optional route parameter parsing order in `src/router.php`.
