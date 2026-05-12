@@ -4,13 +4,13 @@ document.addEventListener('click', async function(e) {
     if (!link || !link.href || link.hasAttribute('data-no-spa') || link.classList.contains('no-spa') || link.target === '_blank' || link.hasAttribute('download') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return;
     e.preventDefault();
 
-    // Ambil selector target dan opsi history
+    /* Ambil selector target dan opsi history */
     const reqHeader = document.querySelector('script#fst-spa-agent')?.getAttribute('data-req-header') || 'X-FST-Request';
     const targetHeader = document.querySelector('script#fst-spa-agent')?.getAttribute('data-target-header') || 'X-FST-Target';
     const targetSelector = link.getAttribute('data-fst-target') || 'body';
     const isHistoryOptOut = link.getAttribute('data-fst-history') === 'false';
 
-    // Lengkapi: Tambahkan class 'fst-loading' ke elemen targetSelector
+    /* Tambahkan class 'fst-loading' ke elemen targetSelector */
     const targetElement = document.querySelector(targetSelector);
     if (targetElement) targetElement.classList.add('fst-loading');
 
@@ -22,18 +22,18 @@ document.addEventListener('click', async function(e) {
 
         if (!targetElement) throw new Error('Target not found');
 
-        // Lengkapi: Dispatch event 'fst:unload' ke document
+        /* Dispatch event 'fst:unload' ke document */
         document.dispatchEvent(new Event('fst:unload'));
 
-        // Lengkapi: Ganti innerHTML targetElement dengan html dari response
+        /* Ganti innerHTML targetElement dengan html dari response */
         targetElement.innerHTML = html;
 
-        // Lengkapi: Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector }
+        /* Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector } */
         if (!isHistoryOptOut) {
             window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, '', link.href);
         }
 
-        // Lengkapi: Eksekusi ulang tag <script> di dalam targetElement (jangan lupa skip script dengan id 'fst-spa-agent')
+        /* Eksekusi ulang tag <script> (skip fst-spa-agent dan data-spa-ignore) */
         const scripts = targetElement.querySelectorAll('script');
         scripts.forEach(oldScript => {
             if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
@@ -43,26 +43,26 @@ document.addEventListener('click', async function(e) {
             oldScript.parentNode.replaceChild(newScript, oldScript);
         });
 
-        // Lengkapi: Dispatch event 'fst:load' ke document
+        /* Dispatch event 'fst:load' ke document */
         document.dispatchEvent(new Event('fst:load'));
     } catch (err) {
         window.location.href = link.href;
     } finally {
-        // Lengkapi: Hapus class 'fst-loading' dari elemen targetSelector
+        /* Hapus class 'fst-loading' dari elemen targetSelector */
         if (targetElement) targetElement.classList.remove('fst-loading');
     }
 });
 
 window.addEventListener('popstate', function(e) {
-    // Lengkapi: Cek jika e.state && e.state.fstHtml && e.state.fstTarget tersedia.
+    /* Cek jika e.state && e.state.fstHtml && e.state.fstTarget tersedia */
     if (e.state && e.state.fstHtml && e.state.fstTarget) {
         const targetElement = document.querySelector(e.state.fstTarget);
         if (targetElement) {
-            // 1. Dispatch fst:unload
+            /* 1. Dispatch fst:unload */
             document.dispatchEvent(new Event('fst:unload'));
-            // 2. Isi document.querySelector(e.state.fstTarget).innerHTML dengan e.state.fstHtml
+            /* 2. Isi innerHTML dengan e.state.fstHtml */
             targetElement.innerHTML = e.state.fstHtml;
-            // 3. Eksekusi ulang script di dalamnya (skip fst-spa-agent)
+            /* 3. Eksekusi ulang script (skip fst-spa-agent dan data-spa-ignore) */
             const scripts = targetElement.querySelectorAll('script');
             scripts.forEach(oldScript => {
                 if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
@@ -71,16 +71,16 @@ window.addEventListener('popstate', function(e) {
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
                 oldScript.parentNode.replaceChild(newScript, oldScript);
             });
-            // 4. Dispatch fst:load
+            /* 4. Dispatch fst:load */
             document.dispatchEvent(new Event('fst:load'));
         } else {
             window.location.reload();
         }
     } else {
-        // Jika state tidak ada, fallback jalankan: window.location.reload();
+        /* Fallback jika state tidak ada */
         window.location.reload();
     }
 });
 
-// Initial load event
+/* Initial load event */
 document.dispatchEvent(new Event('fst:load'));

@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Compiler**: Fixed aggressive PHP tag removal that corrupted string literals in source files (e.g., scaffolding templates in `install.php`).
 - **FIM**: Fixed `fst_check_integrity()` failing on Windows due to CRLF line endings — replaced `explode(" */\n", ...)` with `preg_split` to handle both `\r\n` and `\n`.
 - **FIM**: Fixed `fst_check_integrity()` unable to locate `fullstuck.php` when running `php -S` from test subfolders — added `$_SERVER['SCRIPT_FILENAME']` fallback for path resolution.
+- **Build**: Improved `fst.js` minification in compiler to strip comments (// and /* */) properly.
+- **Improvement**: Updated `src/assets/fst.js` to use block comments for safer compilation.
 - **Fix**: Optional route parameter parsing order in `src/router.php`.
 
 ### Security (Code Review Hardening)

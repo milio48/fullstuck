@@ -10,6 +10,10 @@ define('FST_DOCS_URL', 'https://raw.githubusercontent.com/milio48/fullstuck/refs
 // Minify fst.js
 $fst_js_path = $src_dir . '/assets/fst.js';
 $fst_js_code = file_exists($fst_js_path) ? file_get_contents($fst_js_path) : '';
+// Hapus komentar multi-line
+$fst_js_code = preg_replace('!/\*.*?\*/!s', '', $fst_js_code);
+// Hapus komentar single-line (hati-hati agar tidak menghapus URL)
+$fst_js_code = preg_replace('/\n\s*\/\/.*$/m', '', $fst_js_code); // Hanya hapus yang dimulai dengan // di awal baris/setelah whitespace
 $fst_js_code = preg_replace('/\s+/', ' ', $fst_js_code); // Basic minification
 $fst_js_code = addslashes(trim($fst_js_code));
 
