@@ -21,6 +21,12 @@ function _fst_parsed_body() {
             $json = json_decode($raw, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($json)) {
                 $cache = array_merge($cache, $json);
+            } else {
+                // Fallback untuk application/x-www-form-urlencoded (PUT/PATCH)
+                parse_str($raw, $parsed_vars);
+                if (is_array($parsed_vars)) {
+                    $cache = array_merge($cache, $parsed_vars);
+                }
             }
         }
     }

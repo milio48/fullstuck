@@ -591,7 +591,7 @@ HTML;
         $function_groups = [
             'Core' => ['fst_abort', 'fst_run', 'fst_is_dev', 'fst_config', 'fst_extract_html_fragment', 'fst_app'],
 
-            'Database' => ['fst_db', 'fst_db_select', 'fst_db_insert', 'fst_db_update', 'fst_db_delete', 'fst_db_quote_ident', '_fst_sanitize_order_by'],
+            'Database' => ['fst_db', 'fst_db_select', 'fst_db_row', 'fst_db_exists', 'fst_db_insert', 'fst_db_update', 'fst_db_delete', 'fst_db_quote_ident', '_fst_sanitize_order_by'],
             'Views' => [
                 'fst_view',
                 'fst_partial',
@@ -912,9 +912,8 @@ HTML;
         // Download file
         $ctx = stream_context_create(['http' => ['timeout' => 10]]);
         $content = @file_get_contents($url, false, $ctx);
-
-        if ($content === false) {
-            fst_flash_set('error_message', 'Failed to download plugin from: ' . htmlspecialchars($url));
+        if ($content === false || strpos(trim($content), '<?php') !== 0) {
+            fst_flash_set('error_message', 'Invalid plugin file or failed to download from GitHub.');
         } else {
             $filename = $plugin_dir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $id) . '.php';
             if (file_put_contents($filename, $content) !== false) {

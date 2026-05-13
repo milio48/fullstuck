@@ -26,6 +26,8 @@ document.addEventListener('click', async function(e) {
         }
 
         const html = await response.text();
+        const newTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (newTitle) document.title = newTitle[1];
 
         if (!targetElement) throw new Error('Target not found');
 
@@ -140,6 +142,8 @@ document.addEventListener('submit', async function(e) {
         }
         
         const html = await response.text();
+        const newTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (newTitle) document.title = newTitle[1];
         if (!targetElement) throw new Error('Target not found');
         
         document.dispatchEvent(new Event('fst:unload'));

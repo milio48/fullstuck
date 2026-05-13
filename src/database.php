@@ -45,7 +45,10 @@ function fst_db_quote_ident($name) {
     // [PATCH] Dukungan table.column
     if (str_contains($name, '.')) {
         $parts = explode('.', $name);
-        return $q . str_replace($q, $q . $q, $parts[0]) . $q . '.' . $q . str_replace($q, $q . $q, $parts[1]) . $q;
+        $quoted_parts = array_map(function($p) use ($q) {
+            return $q . str_replace($q, $q . $q, $p) . $q;
+        }, $parts);
+        return implode('.', $quoted_parts);
     }
     return $q . str_replace($q, $q . $q, $name) . $q;
 }
@@ -151,5 +154,15 @@ function fst_db_delete($table, $conditions) {
     }
     $sql = "DELETE FROM {$t} WHERE " . implode(" AND ", $where);
     return fst_db('EXEC', $sql, $params);
+}
+function fst_db_row($table, $conditions = [], $options = []) {
+    $options['limit'] = 1;
+    $options['mode'] = 'ROW';
+    return fst_db_select($table, $conditions, $options);
+}
+
+function fst_db_exists($table, $conditions = []) {
+    $row = fst_db_row($table, $conditions, ['select' => '1']);
+    return !empty($row);
 }
 ?>
