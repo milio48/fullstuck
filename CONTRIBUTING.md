@@ -62,3 +62,21 @@ Setiap kali menambah fungsi baru ke framework (contoh: `fst_db_select`, `fst_val
 | 6 | `version.json` | Update **hash** di file ini dengan nilai `FST_HASH` terbaru dari header `fullstuck.php`. Ini penting untuk fitur Remote Integrity Check. |
 
 *(Note untuk AI Agent: Sebelum Anda memberikan summary final ke user, pastikan file `fullstuck.php` di root selalu ikut ter-update akibat proses build, agar sinkron dengan perubahan pada `src/`).*
+
+## 6. Aturan Pembuatan Plugin (Store)
+Untuk berkontribusi atau membuat plugin resmi yang dapat diinstal melalui Admin Dashboard, ikuti aturan berikut:
+
+1. **Lokasi File**: File plugin wajib diletakkan di dalam folder `store/` pada root repositori ini.
+2. **Konvensi Penamaan**: Nama file harus menggunakan prefix **`fst-`** diikuti dengan ID unik plugin, dan diakhiri dengan ekstensi `.php`.
+   - Format: `fst-{id}.php`
+   - Contoh: `fst-hello-world.php` (ID: `hello-world`)
+3. **Unique ID**: ID plugin harus unik dan hanya boleh mengandung karakter alphanumeric, dash (`-`), dan underscore (`_`). ID ini akan menjadi penentu URL pengunduhan.
+4. **Registrasi Store**: Setelah membuat file plugin, Anda **WAJIB** mendaftarkan plugin tersebut ke dalam file `store.json` di root repositori dengan format:
+   ```json
+   {
+     "id": "id-plugin-anda",
+     "name": "Nama Plugin",
+     "description": "Deskripsi singkat fungsi plugin."
+   }
+   ```
+5. **Keamanan**: Gunakan helper bawaan framework (seperti `fst_get`, `fst_post`, `fst_app`, dll) daripada memanggil variabel superglobal PHP secara langsung untuk menjaga keamanan dan portabilitas plugin.
