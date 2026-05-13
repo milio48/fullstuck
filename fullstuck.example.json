@@ -5,7 +5,7 @@
         "password": "$2y$12$QCgb6FklY0z23LGjdRn7ieRUF0b4oXaW5AQ91oai8fi7RFDhPF57a"
     },
     "database": {
-        "driver": "none",
+        "driver": "sqlite",
         "mysql": {
             "host": "localhost",
             "dbname": "fullstuck_db",
@@ -14,38 +14,30 @@
         },
         "sqlite": {
             "database_path": "database.sqlite"
+        },
+        "pgsql": {
+            "host": "localhost",
+            "port": "5432",
+            "dbname": "fullstuck_db",
+            "username": "postgres",
+            "password": ""
         }
     },
     "routing": {
-        "mode": "dynamic",
         "base_path": "/",
         "public_folders": [
             "assets",
             "uploads",
             "storage/public"
         ],
+        "routes_file": [
+            "router.php"
+        ],
         "error_handlers": {
             "404": "views/errors/404.php",
             "403": "Sorry, you do not have permission.",
             "405": "Method not allowed.",
             "500": "views/errors/500.php"
-        },
-        "static_config": {
-            "routes_file": [
-                "router.php"
-            ],
-            "dynamic_fallback": false
-        },
-        "dynamic_config": {
-            "whitelist_filetype": [
-                "php",
-                "html"
-            ],
-            "index_files": [
-                "index.php",
-                "index.html"
-            ],
-            "directory_listing": false
         },
         "regex_shortcuts": {
             "i": "([0-9]+)",
@@ -54,6 +46,13 @@
             "h": "([a-fA-F0-9]+)",
             "any": "([^/]+)"
         }
+    },
+    "spa": {
+        "enabled": true,
+        "default_target": "body",
+        "header_request": "X-FST-Request",
+        "header_target": "X-FST-Target",
+        "indicator_class": "fst-loading"
     },
     "mime_types": {
         "css": "text/css",
