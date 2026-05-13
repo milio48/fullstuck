@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 677a6a09a2e3228dd098512b5b3ff43218fe7c104e06cc4327e9c945ca0bb2bd
+ * 💡 Version: 0.1.0 | FST_HASH: a870eef70d1b1950a655338a899794f29eaf224f3fb77c92b909c92f42cde09d
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\')); document.addEventListener(\'submit\', async function(e) { if (e.defaultPrevented) return; const form = e.target; if (form.hasAttribute(\'data-no-spa\') || form.classList.contains(\'no-spa\')) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = form.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = form.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const method = (form.getAttribute(\'method\') || \'GET\').toUpperCase(); const action = form.getAttribute(\'action\') || window.location.href; const formData = new FormData(form); const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; let fetchOptions = { method, headers }; let finalUrl = action; if (method === \'GET\') { const params = new URLSearchParams(formData); finalUrl = action.includes(\'?\') ? `${action}&${params.toString()}` : `${action}?${params.toString()}`; } else { fetchOptions.body = formData; } const response = await fetch(finalUrl, fetchOptions); if (response.redirected) { window.location.href = response.url; return; } if (!response.ok && response.status !== 400 && response.status !== 422) { window.location.href = finalUrl; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut && method === \'GET\') { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', finalUrl); } document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.reload(); } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } });');
 
@@ -1222,6 +1222,79 @@ if (fst_is_dev()) {
     fst_post($admin_base . '/plugins/toggle', 'fst_admin_toggle_plugin');
     fst_post($admin_base . '/plugins/uninstall', 'fst_admin_uninstall_plugin');
 
+    
+    fst_get($admin_base . '/update', function() use ($admin_base) {
+        fst_admin_check_auth();
+        $current_version = defined('FST_VERSION') ? FST_VERSION : 'Unknown';
+        $json_url = 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/version.json';
+        
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_data = @file_get_contents($json_url, false, $ctx);
+        $remote_version = 'Unknown';
+        $can_update = false;
+
+        if ($remote_data) {
+            $json = json_decode($remote_data, true);
+            if (isset($json['version'])) {
+                $remote_version = $json['version'];
+                
+                if ($current_version !== 'Unknown') {
+                    $can_update = version_compare($remote_version, $current_version, '>');
+                }
+            }
+        }
+
+        $html = "<h2>System Update</h2>";
+        $html .= "<p>Current Version: <strong>{$current_version}</strong></p>";
+        $html .= "<p>Latest Version: <strong>{$remote_version}</strong></p>";
+
+        if ($can_update) {
+            $html .= '<div style="background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin-bottom: 20px;">
+                        <strong>🚀 Update Tersedia!</strong> Versi baru siap diunduh.
+                      </div>';
+            $html .= '<form method="POST" action="' . $admin_base . '/update/run">
+                        ' . fst_csrf_field() . '
+                        <button type="submit" onclick="return confirm(\'Proses ini akan mengunduh core terbaru dan membackup file lama Anda. Lanjutkan?\');" style="background:#007bff; color:white; padding:10px 15px; border:none; cursor:pointer;">Update Core Sekarang</button>
+                      </form>';
+        } else {
+            $html .= "<p style='color: green;'>Sistem Anda sudah up-to-date.</p>";
+        }
+
+        fst_admin_render_page('Update System', $html);
+    });
+
+    fst_post($admin_base . '/update/run', function() use ($admin_base) {
+        fst_admin_check_auth();
+        fst_csrf_check();
+
+        $core_url = 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/fullstuck.php';
+        $ctx = stream_context_create(['http' => ['timeout' => 15]]);
+        $new_core = @file_get_contents($core_url, false, $ctx);
+
+        
+        if (!$new_core || strpos($new_core, '<?php') !== 0) {
+            fst_flash_set('error_message', 'Gagal mengunduh update atau file korup.');
+            fst_redirect($admin_base . '/update');
+        }
+
+        $target_file = FST_ROOT_DIR . '/fullstuck.php';
+        $backup_file = FST_ROOT_DIR . '/fullstuck.bak.php';
+
+        
+        if (file_exists($target_file)) {
+            copy($target_file, $backup_file);
+        }
+
+        
+        if (file_put_contents($target_file, $new_core) !== false) {
+            fst_flash_set('success_message', 'Sistem berhasil diupdate! File lama disimpan sebagai fullstuck.bak.php');
+        } else {
+            fst_flash_set('error_message', 'Gagal menulis file. Periksa permission server.');
+        }
+
+        fst_redirect($admin_base . '/update');
+    });
+
     fst_any($admin_base . '/p/{id}', function($id) use ($admin_base) {
         fst_admin_check_auth();
         $plugins = fst_app('plugins') ?? [];
@@ -1368,6 +1441,7 @@ HTML;
     <a href="{$admin_base}/scan" data-no-spa>Scan Project</a>
     <a href="{$admin_base}/integrity" data-no-spa>Integrity</a>
     <a href="{$admin_base}/plugins" data-no-spa>Plugins</a>
+    <a href="{$admin_base}/update" data-no-spa>Update</a>
     {$plugin_links}<a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
 </nav>
 <div class="container">
@@ -2043,6 +2117,18 @@ HTML;
 
 // FILE: bootstrap.php
 $fst_config = fst_app('config');
+
+
+if (php_sapi_name() !== 'cli' && strpos($_SERVER['REQUEST_URI'], 'fullstuck.php') !== false) {
+    http_response_code(500);
+    die('
+        <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; border: 1px solid #ff4444; border-radius: 8px; background: #fff1f1; color: #333;">
+            <h2 style="color: #d32f2f; margin-top: 0;">🚨 Routing Misconfigured!</h2>
+            <p>Framework mendeteksi <code>fullstuck.php</code> di dalam URL. Ini menandakan URL Rewriting di web server Anda belum aktif.</p>
+            <p><strong>Solusi:</strong> Pastikan Anda menggunakan web server yang mendukung single-entry routing (Apache dengan .htaccess, Nginx, atau FrankenPHP). Silakan baca dokumentasi FullStuck bagian Deployment.</p>
+        </div>
+    ');
+}
 
 
 $plugin_dir = FST_ROOT_DIR . '/fst-plugins';

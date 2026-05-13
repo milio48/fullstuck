@@ -26,6 +26,79 @@ if (fst_is_dev()) {
     fst_post($admin_base . '/plugins/toggle', 'fst_admin_toggle_plugin');
     fst_post($admin_base . '/plugins/uninstall', 'fst_admin_uninstall_plugin');
 
+    // --- FITUR UPDATE OTA ---
+    fst_get($admin_base . '/update', function() use ($admin_base) {
+        fst_admin_check_auth();
+        $current_version = defined('FST_VERSION') ? FST_VERSION : 'Unknown';
+        $json_url = 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/version.json';
+        
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_data = @file_get_contents($json_url, false, $ctx);
+        $remote_version = 'Unknown';
+        $can_update = false;
+
+        if ($remote_data) {
+            $json = json_decode($remote_data, true);
+            if (isset($json['version'])) {
+                $remote_version = $json['version'];
+                // Hanya tawarkan update jika versi remote LEBIH BESAR dari versi lokal
+                if ($current_version !== 'Unknown') {
+                    $can_update = version_compare($remote_version, $current_version, '>');
+                }
+            }
+        }
+
+        $html = "<h2>System Update</h2>";
+        $html .= "<p>Current Version: <strong>{$current_version}</strong></p>";
+        $html .= "<p>Latest Version: <strong>{$remote_version}</strong></p>";
+
+        if ($can_update) {
+            $html .= '<div style="background: #e8f5e9; padding: 15px; border-left: 4px solid #4caf50; margin-bottom: 20px;">
+                        <strong>🚀 Update Tersedia!</strong> Versi baru siap diunduh.
+                      </div>';
+            $html .= '<form method="POST" action="' . $admin_base . '/update/run">
+                        ' . fst_csrf_field() . '
+                        <button type="submit" onclick="return confirm(\'Proses ini akan mengunduh core terbaru dan membackup file lama Anda. Lanjutkan?\');" style="background:#007bff; color:white; padding:10px 15px; border:none; cursor:pointer;">Update Core Sekarang</button>
+                      </form>';
+        } else {
+            $html .= "<p style='color: green;'>Sistem Anda sudah up-to-date.</p>";
+        }
+
+        fst_admin_render_page('Update System', $html);
+    });
+
+    fst_post($admin_base . '/update/run', function() use ($admin_base) {
+        fst_admin_check_auth();
+        fst_csrf_check();
+
+        $core_url = 'https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/fullstuck.php';
+        $ctx = stream_context_create(['http' => ['timeout' => 15]]);
+        $new_core = @file_get_contents($core_url, false, $ctx);
+
+        // Validasi ketat: pastikan file yang diunduh benar-benar script PHP
+        if (!$new_core || strpos($new_core, '<?php') !== 0) {
+            fst_flash_set('error_message', 'Gagal mengunduh update atau file korup.');
+            fst_redirect($admin_base . '/update');
+        }
+
+        $target_file = FST_ROOT_DIR . '/fullstuck.php';
+        $backup_file = FST_ROOT_DIR . '/fullstuck.bak.php';
+
+        // Buat backup
+        if (file_exists($target_file)) {
+            copy($target_file, $backup_file);
+        }
+
+        // Timpa file core
+        if (file_put_contents($target_file, $new_core) !== false) {
+            fst_flash_set('success_message', 'Sistem berhasil diupdate! File lama disimpan sebagai fullstuck.bak.php');
+        } else {
+            fst_flash_set('error_message', 'Gagal menulis file. Periksa permission server.');
+        }
+
+        fst_redirect($admin_base . '/update');
+    });
+
     fst_any($admin_base . '/p/{id}', function($id) use ($admin_base) {
         fst_admin_check_auth();
         $plugins = fst_app('plugins') ?? [];
@@ -172,6 +245,7 @@ HTML;
     <a href="{$admin_base}/scan" data-no-spa>Scan Project</a>
     <a href="{$admin_base}/integrity" data-no-spa>Integrity</a>
     <a href="{$admin_base}/plugins" data-no-spa>Plugins</a>
+    <a href="{$admin_base}/update" data-no-spa>Update</a>
     {$plugin_links}<a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
 </nav>
 <div class="container">
