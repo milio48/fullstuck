@@ -2,6 +2,6 @@
   {
     "id": "hello-world",
     "name": "Hello FullStuck",
-    "description": "Plugin sederhana untuk mendemonstrasikan pendaftaran rute /hello-world secara otomatis."
+    "description": "Plugin perkenalan untuk mendemonstrasikan integrasi Frontend dan Backend (Admin Panel) secara otomatis."
   }
 ]
