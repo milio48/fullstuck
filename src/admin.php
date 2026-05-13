@@ -346,19 +346,29 @@ HTML;
         
         if ($db_driver === 'none') {
             $db_status = '<span style="color:orange;">⚠ Not Configured</span>';
-        } elseif ($fst_pdo) { // Cek jika $fst_pdo berhasil diinisialisasi
-            try {
-                $stmt = $fst_pdo->query("SELECT 1");
-                $stmt->fetch();
-                $db_status = '<span style="color:green;">✔ OK</span> (Driver: ' . $db_driver . ')';
-            } catch (Exception $e) {
-                $db_status = '<span style="color:red;">❌ FAILED</span>: ' . $e->getMessage();
-                $errors[] = "Database connection test failed: " . $e->getMessage();
-            }
         } else {
-            // Driver BUKAN 'none', tapi $fst_pdo tetap null (koneksi gagal saat boot)
-            $db_status = '<span style="color:red;">❌ FAILED</span> (Connection failed during boot)';
-            $errors[] = "Database connection failed during boot. Check 'fullstuck.json' or server logs.";
+            if ($fst_pdo === null) {
+                try {
+                    _fst_connect_db();
+                    $fst_pdo = fst_app('pdo');
+                } catch (Exception $e) {
+                    // Error ditangani oleh _fst_connect_db
+                }
+            }
+
+            if ($fst_pdo) { 
+                try {
+                    $stmt = $fst_pdo->query("SELECT 1");
+                    $stmt->fetch();
+                    $db_status = '<span style="color:green;">✔ OK</span> (Driver: ' . $db_driver . ')';
+                } catch (Exception $e) {
+                    $db_status = '<span style="color:red;">❌ FAILED</span>: ' . $e->getMessage();
+                    $errors[] = "Database connection test failed: " . $e->getMessage();
+                }
+            } else {
+                $db_status = '<span style="color:red;">❌ FAILED</span> (Could not initialize connection)';
+                $errors[] = "Database connection could not be established. Check 'fullstuck.json' or server logs.";
+            }
         }
 
         $content = "<h2>Configuration Status</h2>";
