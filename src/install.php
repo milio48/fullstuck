@@ -38,7 +38,8 @@ function fst_handle_installation() {
                 "environment" => "development", 
                 "admin" => [
                     "page_url" => $input_data['admin_url'] ?? '/stuck',
-                    "password" => password_hash($input_data['admin_pass'], PASSWORD_DEFAULT)
+                    "password" => password_hash($input_data['admin_pass'], PASSWORD_DEFAULT),
+                    "allowed_ips" => [] // Kosong berarti diizinkan semua
                 ],
                 "database" => [
                     "driver" => $driver,
@@ -53,6 +54,7 @@ function fst_handle_installation() {
                     "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
                 ],
                 "spa" => [
+                    // enabled bisa berisi true, false, atau "manual"
                     "enabled" => isset($input_data['enable_spa']) && $input_data['enable_spa'] === '1',
                     "default_target" => "body",
                     "header_request" => "X-FST-Request",
@@ -69,6 +71,11 @@ function fst_handle_installation() {
                 $htaccess_code = implode("\n", [
                     '# 1. Nonaktifkan fitur "Index of" dan "MultiViews"',
                     'Options -Indexes -MultiViews',
+                    '',
+                    '# Blokir akses ke file hidden (dotfiles)',
+                    '<FilesMatch "^\.">',
+                    '    Require all denied',
+                    '</FilesMatch>',
                     '',
                     '<IfModule mod_rewrite.c>',
                     '    RewriteEngine On',

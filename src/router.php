@@ -68,7 +68,7 @@ function fst_route($method, $path, $callback, $middleware = []) {
     $final_pattern = '#^' . str_replace('/', '\/', $final_pattern) . '$#';
 
     // Strict Mode: Detect Duplicates
-    foreach ($fst_routes as $existing) {
+    foreach ($fst_routes[$method] ?? [] as $existing) {
         if ($existing[0] === $method && $existing[3] === $full_original_path) {
             fst_abort(500, "Duplicate route detected: [{$method}] {$full_original_path}. Each route must be unique.");
         }
@@ -77,7 +77,8 @@ function fst_route($method, $path, $callback, $middleware = []) {
     if (!is_array($middleware)) $middleware = [$middleware];
     $combined_middleware = array_merge($fst_group_middleware ?? [], $middleware);
 
-    $fst_routes[] = [$method, $final_pattern, $callback, $full_original_path, $combined_middleware];
+    if (!isset($fst_routes[$method])) $fst_routes[$method] = [];
+    $fst_routes[$method][] = [$method, $final_pattern, $callback, $full_original_path, $combined_middleware];
     fst_app('routes', $fst_routes);
 }
 
@@ -151,7 +152,10 @@ function _fst_match_static_routes() {
     $uri = fst_uri();
     $method = fst_method();
     
-    foreach ($fst_routes as $route) {
+    // AMBIL BUCKET YANG SESUAI SAJA:
+    $routes_to_check = array_merge($fst_routes[$method] ?? [], $fst_routes['ANY'] ?? []);
+    
+    foreach ($routes_to_check as $route) {
         list($route_method, $pattern, $callback) = $route;
         if ($route_method !== 'ANY' && $route_method !== $method) continue;
         
@@ -211,6 +215,9 @@ function _fst_match_static_routes() {
 }
 
 function fst_run() {
+    // TAMBAHKAN BARIS INI:
+    fst_app('route_found', false); 
+
     // [PATCH] Security Headers Global
     if (!headers_sent()) {
         header('X-Frame-Options: SAMEORIGIN');
@@ -243,18 +250,34 @@ function fst_run() {
     
     $output = ob_get_clean();
 
+    // Evaluasi Opsi SPA
+    $spa_mode = fst_config('spa.enabled', false);
+    $should_inject_spa = false;
+
+    if ($spa_mode === true || $spa_mode === '1') {
+        $should_inject_spa = true;
+    } elseif ($spa_mode === 'manual' && fst_app('inject_spa_manual') === true) {
+        $should_inject_spa = true;
+    }
+
+    // Bypass SPA untuk area Admin
+    $req = _fst_get_request_paths(); // Ambil ulang URI path
+    $admin_url = fst_config('admin.page_url', '/stuck');
+    if ($req['uri_path'] === $admin_url || str_starts_with($req['uri_path'], rtrim($admin_url, '/') . '/')) {
+        $should_inject_spa = false;
+    }
+
     if (fst_is_spa()) {
         $target = fst_spa_target();
         $output = fst_extract_html_fragment($output, $target); 
     } 
-    else if (fst_config('spa.enabled', false)) {
+    else if ($should_inject_spa) {
         $script_id = fst_config('spa.script_id', 'fst-spa-agent');
         $req_header = fst_config('spa.header_request', 'X-FST-Request');
         $target_header = fst_config('spa.header_target', 'X-FST-Target');
         $inject_id = $script_id ? 'id="'.$script_id.'" data-req-header="'.$req_header.'" data-target-header="'.$target_header.'"' : '';
         $script_tag = "<script {$inject_id}>\n" . (defined('FST_SPA_JS_CODE') ? FST_SPA_JS_CODE : '') . "\n</script>";
         
-        // [PATCH] Safe SPA Script Injection Fallback
         if (stripos($output, '</body>') !== false) {
             $output = str_ireplace('</body>', $script_tag . "\n</body>", $output);
         } else {

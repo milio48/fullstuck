@@ -33,6 +33,19 @@ if (fst_is_dev()) {
     function fst_admin_check_auth() {
         $fst_config = fst_app('config');
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
+        
+        // 1. Blokir /stuck di production
+        if (!fst_is_dev() && $admin_base === '/stuck') {
+            fst_abort(403, "SECURITY ALERT: You are in 'production' environment. You MUST change the default admin URL in fullstuck.json.");
+        }
+
+        // 2. IP Whitelist Check
+        $allowed_ips = $fst_config['admin']['allowed_ips'] ?? [];
+        if (!empty($allowed_ips) && !in_array($_SERVER['REMOTE_ADDR'], $allowed_ips, true)) {
+            fst_abort(403, "Forbidden: Your IP (" . htmlspecialchars($_SERVER['REMOTE_ADDR']) . ") is not allowed to access the admin area.");
+        }
+
+        // 3. Login Check
         if (empty($_SESSION['fst_admin_logged_in'])) {
             fst_flash_set('error_message', 'Please login to access the admin area.');
             fst_redirect($admin_base . '/login');
@@ -357,23 +370,25 @@ HTML;
         if (empty($fst_routes)) {
              $content .= "<tr><td colspan='4'>No routes registered yet.</td></tr>";
         } else {
-            foreach ($fst_routes as $route) {
-                 list($method, $pattern, $callback, $original_path) = array_pad($route, 4, null);
-                 
-                 if ($original_path === null) {
-                      $original_path = preg_replace(['/#\^|\\\$#/', '/\(\[\^\/]\+\)/', '/\(\[0-9]\+\)/', '/\(\[a-zA-Z0-9\\-]+)/'], ['', '{param}', '{id}', '{slug}'], str_replace('\/', '/', $pattern));
-                 }
+            foreach ($fst_routes as $method_group => $routes) {
+                foreach ($routes as $route) {
+                     list($method, $pattern, $callback, $original_path) = array_pad($route, 4, null);
+                     
+                     if ($original_path === null) {
+                          $original_path = preg_replace(['/#\^|\\\$#/', '/\(\[\^\/]\+\)/', '/\(\[0-9]\+\)/', '/\(\[a-zA-Z0-9\\-]+)/'], ['', '{param}', '{id}', '{slug}'], str_replace('\/', '/', $pattern));
+                     }
 
-                 $link = '-';
-                 if ($method === 'GET' || $method === 'ANY') {
-                      $test_url_path = preg_replace('/\{[^}]+\??\}/', 'test', $original_path);
-                      $test_url = $base_url . $test_url_path;
-                      $link = "<a href='{$test_url}' target='_blank' title='Click to test (opens in new tab)'>" . htmlspecialchars($original_path) . "</a>";
-                 } else {
-                      $link = htmlspecialchars($original_path);
-                 }
+                     $link = '-';
+                     if ($method === 'GET' || $method === 'ANY') {
+                          $test_url_path = preg_replace('/\{[^}]+\??\}/', 'test', $original_path);
+                          $test_url = $base_url . $test_url_path;
+                          $link = "<a href='{$test_url}' target='_blank' title='Click to test (opens in new tab)'>" . htmlspecialchars($original_path) . "</a>";
+                     } else {
+                          $link = htmlspecialchars($original_path);
+                     }
 
-                 $content .= "<tr><td>{$method}</td><td><code>" . htmlspecialchars($original_path) . "</code></td><td><code>" . htmlspecialchars($pattern) . "</code></td><td>{$link}</td></tr>";
+                     $content .= "<tr><td>{$method}</td><td><code>" . htmlspecialchars($original_path) . "</code></td><td><code>" . htmlspecialchars($pattern) . "</code></td><td>{$link}</td></tr>";
+                }
             }
         }
         $content .= "</tbody></table>";

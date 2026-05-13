@@ -1,36 +1,38 @@
 <?php
-$fst_config = fst_app('config');
-if ($fst_config) {
-    $db_all_config = $fst_config['database'] ?? null;
-    $driver = $db_all_config['driver'] ?? 'none';
+function _fst_connect_db() {
+    $fst_config = fst_app('config');
+    if ($fst_config) {
+        $db_all_config = $fst_config['database'] ?? null;
+        $driver = $db_all_config['driver'] ?? 'none';
 
-    if ($driver !== 'none' && $db_all_config) {
-        try {
-            $db_config = $db_all_config[$driver];
-            $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
+        if ($driver !== 'none' && $db_all_config) {
+            try {
+                $db_config = $db_all_config[$driver];
+                $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
 
-            switch ($driver) {
-                case 'mysql':
-                    $dsn = "mysql:host={$db_config['host']};dbname={$db_config['dbname']};charset=utf8mb4";
-                    $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
-                    break;
-                case 'sqlite':
-                    $path = FST_ROOT_DIR . '/' . $db_config['database_path'];
-                    $dsn = "sqlite:" . $path;
-                    $fst_pdo = new PDO($dsn, null, null, $options);
-                    break;
-                case 'pgsql':
-                    $port = $db_config['port'] ?? '5432';
-                    $dsn = "pgsql:host={$db_config['host']};port={$port};dbname={$db_config['dbname']}";
-                    $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
-                    break;
-                default:
-                    throw new Exception("Unsupported database driver '{$driver}' in fullstuck.json.");
+                switch ($driver) {
+                    case 'mysql':
+                        $dsn = "mysql:host={$db_config['host']};dbname={$db_config['dbname']};charset=utf8mb4";
+                        $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
+                        break;
+                    case 'sqlite':
+                        $path = FST_ROOT_DIR . '/' . $db_config['database_path'];
+                        $dsn = "sqlite:" . $path;
+                        $fst_pdo = new PDO($dsn, null, null, $options);
+                        break;
+                    case 'pgsql':
+                        $port = $db_config['port'] ?? '5432';
+                        $dsn = "pgsql:host={$db_config['host']};port={$port};dbname={$db_config['dbname']}";
+                        $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
+                        break;
+                    default:
+                        throw new Exception("Unsupported database driver '{$driver}' in fullstuck.json.");
+                }
+                fst_app('pdo', $fst_pdo);
+            } catch (Exception $e) {
+                if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
+                else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
             }
-            fst_app('pdo', $fst_pdo);
-        } catch (Exception $e) {
-            if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
-            else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
         }
     }
 }
@@ -62,6 +64,10 @@ function _fst_sanitize_order_by($order_by) {
 }
 
 function fst_db($mode, $sql, $params = []) {
+    if (fst_app('pdo') === null) {
+        _fst_connect_db();
+    }
+    
     $fst_pdo = fst_app('pdo');
 
     if ($fst_pdo === null) {

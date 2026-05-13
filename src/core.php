@@ -99,9 +99,11 @@ function _fst_exception_handler($e) {
     http_response_code(500);
     
     if (!fst_is_dev() || !fst_is_safe_to_debug()) {
-        // Mode Production atau akses tidak aman: Log pesan dan sembunyikan detail
-        error_log($e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine());
-        if (function_exists('fst_abort')) { fst_abort(500, "Internal Server Error."); } 
+        $log_message = "[" . date('Y-m-d H:i:s') . "] " . get_class($e) . ": " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine() . "\n";
+        @file_put_contents(FST_ROOT_DIR . '/.fst-error.log', $log_message, FILE_APPEND);
+        error_log($log_message); // Tetap lempar ke log server standar
+        
+        if (function_exists('fst_abort')) { fst_abort(500, "Internal Server Error. Please check .fst-error.log for details."); } 
         else { die("Internal Server Error."); }
     }
     
@@ -207,6 +209,10 @@ function fst_spa_target(): string {
     $header_name = fst_config('spa.header_target', 'X-FST-Target');
     $target_header = 'HTTP_' . str_replace('-', '_', strtoupper($header_name));
     return $_SERVER[$target_header] ?? 'body';
+}
+
+function fst_spa_page() {
+    fst_app('inject_spa_manual', true);
 }
 
 function fst_extract_html_fragment($html, $selector = 'body') {
