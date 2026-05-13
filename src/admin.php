@@ -773,10 +773,9 @@ HTML;
             fst_redirect($admin_base . '/plugins');
         }
         
-        // 1. Konstruksi URL resmi (Hardcoded Prefix untuk keamanan maksimal)
-        // Kita hanya mengizinkan karakter alphanumeric, underscore, dan dash untuk ID agar terhindar dari path traversal
+        // 1. Konstruksi URL resmi (Hardcoded Prefix & Convention: fst-{id}.php)
         $clean_id = preg_replace('/[^a-zA-Z0-9_-]/', '', $id);
-        $url = "https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/store/" . $clean_id . ".php";
+        $url = "https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/store/fst-" . $clean_id . ".php";
 
         // Pastikan direktori plugin ada
         $plugin_dir = FST_ROOT_DIR . '/fst-plugins';

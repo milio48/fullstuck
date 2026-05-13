@@ -2,7 +2,6 @@
   {
     "id": "hello-world",
     "name": "Hello FullStuck",
-    "description": "Plugin sederhana untuk mendemonstrasikan pendaftaran rute /hello-world secara otomatis.",
-    "url": "https://raw.githubusercontent.com/milio48/fullstuck/main/store/fst-hello-world.php"
+    "description": "Plugin sederhana untuk mendemonstrasikan pendaftaran rute /hello-world secara otomatis."
   }
 ]
