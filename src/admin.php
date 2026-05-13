@@ -49,7 +49,7 @@ if (fst_is_dev()) {
         $html = <<<HTML
 <!DOCTYPE html><html lang="en"><head><title>Admin Login</title><style>/* CSS Sederhana */ body{font-family:sans-serif; max-width:400px; margin:50px auto; padding:20px; border:1px solid #ccc;} input{width:100%; padding:8px; margin-bottom:10px;} button{padding:10px 15px;}</style></head>
 <body><h1>Admin Login</h1>{$error_html}
-<form method="POST" action="{$admin_base}/login">{$csrf}
+<form method="POST" action="{$admin_base}/login" data-no-spa>{$csrf}
 <label for="password">Password:</label><input type="password" name="password" id="password" required><button type="submit">Login</button></form></body></html>
 HTML;
         echo $html;
@@ -127,14 +127,14 @@ HTML;
 </style>
 </head><body>
 <nav>
-    <a href="{$admin_base}">Monitor</a>
-    <a href="{$admin_base}/config">Config Editor</a>
-    <a href="{$admin_base}/routes">Route List</a>
-    <a href="{$admin_base}/server-info">Server Info</a>
-    <a href="{$admin_base}/scan">Scan Project</a>
-    <a href="{$admin_base}/integrity">Integrity</a>
-    <a href="{$admin_base}/plugins">Plugins</a>
-    <a href="{$admin_base}/logout" style="float:right;">Logout</a>
+    <a href="{$admin_base}" data-no-spa>Monitor</a>
+    <a href="{$admin_base}/config" data-no-spa>Config Editor</a>
+    <a href="{$admin_base}/routes" data-no-spa>Route List</a>
+    <a href="{$admin_base}/server-info" data-no-spa>Server Info</a>
+    <a href="{$admin_base}/scan" data-no-spa>Scan Project</a>
+    <a href="{$admin_base}/integrity" data-no-spa>Integrity</a>
+    <a href="{$admin_base}/plugins" data-no-spa>Plugins</a>
+    <a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
 </nav>
 <div class="container">
     <h1>{$title}</h1>
@@ -307,7 +307,7 @@ HTML;
         
         $content = <<<HTML
 <p>Edit the raw JSON configuration below. Be careful with syntax!</p>
-<form action="{$admin_base}/config/save" method="POST">
+<form action="{$admin_base}/config/save" method="POST" data-no-spa>
     {$csrf}
     <textarea name="config_content" spellcheck="false">{$config_content}</textarea>
     <br><br>
@@ -447,7 +447,7 @@ HTML;
 <p>Click the button below to scan your project directory (<code>{$_SERVER['DOCUMENT_ROOT']}</code>) for usage of <code>fst_</code> functions in <code>.php</code> files.</p>
 <p><strong>Warning:</strong> This might take a while on large projects. Folders like <code>vendor</code> and <code>node_modules</code> are automatically skipped.</p>
 
-<form action="{$admin_base}/scan/run" method="POST">
+<form action="{$admin_base}/scan/run" method="POST" data-no-spa>
     {$csrf}
     <button type="submit">Start Scan</button>
 </form>
@@ -651,12 +651,12 @@ HTML;
                 $html .= "<td><strong>" . htmlspecialchars($p['name']) . "</strong><br><small style='color:#666;'>" . htmlspecialchars($p['filename']) . "</small></td>";
                 $html .= "<td>{$status}</td>";
                 $html .= "<td>
-                    <form action='{$admin_base}/plugins/toggle' method='POST' style='display:inline;'>
+                    <form action='{$admin_base}/plugins/toggle' method='POST' style='display:inline;' data-no-spa>
                         {$csrf}
                         <input type='hidden' name='filename' value='" . htmlspecialchars($p['filename']) . "'>
                         <button type='submit' style='{$toggle_style}'>{$toggle_text}</button>
                     </form>
-                    <form action='{$admin_base}/plugins/uninstall' method='POST' style='display:inline;' onsubmit='return confirm(\"Are you sure you want to uninstall this plugin?\")'>
+                    <form action='{$admin_base}/plugins/uninstall' method='POST' style='display:inline;' data-no-spa onsubmit='return confirm(\"Are you sure you want to uninstall this plugin?\")'>
                         {$csrf}
                         <input type='hidden' name='filename' value='" . htmlspecialchars($p['filename']) . "'>
                         <button type='submit' style='background:#dc3545;'>Uninstall</button>
@@ -704,7 +704,7 @@ HTML;
                 $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong><br><small style='color:#666;'>ID: " . htmlspecialchars($id) . "</small></td>";
                 $html .= "<td>" . htmlspecialchars($plugin['description'] ?? '') . "</td>";
                 $html .= "<td>
-                    <form action='{$admin_base}/plugins/install' method='POST' style='display:inline;'>
+                    <form action='{$admin_base}/plugins/install' method='POST' style='display:inline;' data-no-spa>
                         {$csrf}
                         <input type='hidden' name='id' value='" . htmlspecialchars($id) . "'>
                         <input type='hidden' name='url' value='" . htmlspecialchars($plugin['url'] ?? '') . "'>

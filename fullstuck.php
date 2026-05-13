@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 2c64e0932c59530b0d668f93f3cd6dfa4dfdb7d3e42e325e7cc64df89bd8222b
+ * 💡 Version: 0.1.0 | FST_HASH: 9951e1f92bdd65df58ad28f653fc6dd70bdf39195a833adc0cb55b9b06b92b9f
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\')); document.addEventListener(\'submit\', async function(e) { if (e.defaultPrevented) return; const form = e.target; if (form.hasAttribute(\'data-no-spa\') || form.classList.contains(\'no-spa\')) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = form.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = form.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const method = (form.getAttribute(\'method\') || \'GET\').toUpperCase(); const action = form.getAttribute(\'action\') || window.location.href; const formData = new FormData(form); const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; let fetchOptions = { method, headers }; let finalUrl = action; if (method === \'GET\') { const params = new URLSearchParams(formData); finalUrl = action.includes(\'?\') ? `${action}&${params.toString()}` : `${action}?${params.toString()}`; } else { fetchOptions.body = formData; } const response = await fetch(finalUrl, fetchOptions); if (response.redirected) { window.location.href = response.url; return; } if (!response.ok && response.status !== 400 && response.status !== 422) { window.location.href = finalUrl; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut && method === \'GET\') { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', finalUrl); } document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.reload(); } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } });');
 
@@ -1144,7 +1144,7 @@ if (fst_is_dev()) {
         $html = <<<HTML
 <!DOCTYPE html><html lang="en"><head><title>Admin Login</title><style>/* CSS Sederhana */ body{font-family:sans-serif; max-width:400px; margin:50px auto; padding:20px; border:1px solid #ccc;} input{width:100%; padding:8px; margin-bottom:10px;} button{padding:10px 15px;}</style></head>
 <body><h1>Admin Login</h1>{$error_html}
-<form method="POST" action="{$admin_base}/login">{$csrf}
+<form method="POST" action="{$admin_base}/login" data-no-spa>{$csrf}
 <label for="password">Password:</label><input type="password" name="password" id="password" required><button type="submit">Login</button></form></body></html>
 HTML;
         echo $html;
@@ -1222,14 +1222,14 @@ HTML;
 </style>
 </head><body>
 <nav>
-    <a href="{$admin_base}">Monitor</a>
-    <a href="{$admin_base}/config">Config Editor</a>
-    <a href="{$admin_base}/routes">Route List</a>
-    <a href="{$admin_base}/server-info">Server Info</a>
-    <a href="{$admin_base}/scan">Scan Project</a>
-    <a href="{$admin_base}/integrity">Integrity</a>
-    <a href="{$admin_base}/plugins">Plugins</a>
-    <a href="{$admin_base}/logout" style="float:right;">Logout</a>
+    <a href="{$admin_base}" data-no-spa>Monitor</a>
+    <a href="{$admin_base}/config" data-no-spa>Config Editor</a>
+    <a href="{$admin_base}/routes" data-no-spa>Route List</a>
+    <a href="{$admin_base}/server-info" data-no-spa>Server Info</a>
+    <a href="{$admin_base}/scan" data-no-spa>Scan Project</a>
+    <a href="{$admin_base}/integrity" data-no-spa>Integrity</a>
+    <a href="{$admin_base}/plugins" data-no-spa>Plugins</a>
+    <a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
 </nav>
 <div class="container">
     <h1>{$title}</h1>
@@ -1402,7 +1402,7 @@ HTML;
         
         $content = <<<HTML
 <p>Edit the raw JSON configuration below. Be careful with syntax!</p>
-<form action="{$admin_base}/config/save" method="POST">
+<form action="{$admin_base}/config/save" method="POST" data-no-spa>
     {$csrf}
     <textarea name="config_content" spellcheck="false">{$config_content}</textarea>
     <br><br>
@@ -1542,7 +1542,7 @@ HTML;
 <p>Click the button below to scan your project directory (<code>{$_SERVER['DOCUMENT_ROOT']}</code>) for usage of <code>fst_</code> functions in <code>.php</code> files.</p>
 <p><strong>Warning:</strong> This might take a while on large projects. Folders like <code>vendor</code> and <code>node_modules</code> are automatically skipped.</p>
 
-<form action="{$admin_base}/scan/run" method="POST">
+<form action="{$admin_base}/scan/run" method="POST" data-no-spa>
     {$csrf}
     <button type="submit">Start Scan</button>
 </form>
@@ -1746,12 +1746,12 @@ HTML;
                 $html .= "<td><strong>" . htmlspecialchars($p['name']) . "</strong><br><small style='color:#666;'>" . htmlspecialchars($p['filename']) . "</small></td>";
                 $html .= "<td>{$status}</td>";
                 $html .= "<td>
-                    <form action='{$admin_base}/plugins/toggle' method='POST' style='display:inline;'>
+                    <form action='{$admin_base}/plugins/toggle' method='POST' style='display:inline;' data-no-spa>
                         {$csrf}
                         <input type='hidden' name='filename' value='" . htmlspecialchars($p['filename']) . "'>
                         <button type='submit' style='{$toggle_style}'>{$toggle_text}</button>
                     </form>
-                    <form action='{$admin_base}/plugins/uninstall' method='POST' style='display:inline;' onsubmit='return confirm(\"Are you sure you want to uninstall this plugin?\")'>
+                    <form action='{$admin_base}/plugins/uninstall' method='POST' style='display:inline;' data-no-spa onsubmit='return confirm(\"Are you sure you want to uninstall this plugin?\")'>
                         {$csrf}
                         <input type='hidden' name='filename' value='" . htmlspecialchars($p['filename']) . "'>
                         <button type='submit' style='background:#dc3545;'>Uninstall</button>
@@ -1799,7 +1799,7 @@ HTML;
                 $html .= "<td><strong>" . htmlspecialchars($plugin['name'] ?? 'Unknown') . "</strong><br><small style='color:#666;'>ID: " . htmlspecialchars($id) . "</small></td>";
                 $html .= "<td>" . htmlspecialchars($plugin['description'] ?? '') . "</td>";
                 $html .= "<td>
-                    <form action='{$admin_base}/plugins/install' method='POST' style='display:inline;'>
+                    <form action='{$admin_base}/plugins/install' method='POST' style='display:inline;' data-no-spa>
                         {$csrf}
                         <input type='hidden' name='id' value='" . htmlspecialchars($id) . "'>
                         <input type='hidden' name='url' value='" . htmlspecialchars($plugin['url'] ?? '') . "'>
