@@ -24,12 +24,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core**: Added `fst-plugins/` Auto-Discovery for modular framework extension.
 - **Admin**: Added **Plugin Marketplace** with remote fetching and one-click installation.
 - **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote update checker.
+- **Core**: Added `fst_spa_page()` helper for manual SPA rendering mode.
 
 ### Removed
 - **Core**: Removed **Dynamic Routing** mode (dead code amputation) to enforce strict, whitelist-based routing.
 - **View**: Removed `fst_serve_dynamic_file` and `fst_show_directory_listing` public functions.
 
 ### Changed
+- **Core**: Optimized database initialization with lazy-loading connections.
+- **Core**: Refactored router internal storage to use HTTP method bucketing for faster static route matching.
+- **Core**: Reset request-scoped state in `fst_run()` to prevent state bleeding in persistent environments like FrankenPHP.
+- **SPA**: Bypassed SPA script injection on all admin dashboard routes.
 - **Core**: Simplified `fullstuck.json` schema by removing nested routing modes (`static_config`/`dynamic_config`).
 - **Admin**: Streamlined **System Monitor** by removing routing mode status display.
 - **Admin**: Updated **Scan Project** registry to remove deleted view functions and include new core helpers.
@@ -70,6 +75,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Security**: Prevented path traversal and variable injection in `fst_view()`.
 - **Security**: Implemented open redirect protection in `fst_redirect()`.
 - **Security**: Hardened plugin installation with HTTPS requirement and domain white-listing.
+- **Admin**: Added IP Whitelisting (`allowed_ips`) support for the admin dashboard.
+- **Admin**: Enforced production safety by automatically blocking access to the default `/stuck` admin URL.
+- **Core**: Silenced detailed stack traces in production, logging errors securely to `.fst-error.log`.
+- **Installer**: Enhanced `.htaccess` generator to deny access to all hidden dotfiles (e.g., `.fst-error.log`).
 
 ### Features & Improvements
 - **Feature**: Added `data-spa-ignore` support for scripts in SPA agent.
