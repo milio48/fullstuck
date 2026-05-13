@@ -24,7 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core**: Added `fst-plugins/` Auto-Discovery for modular framework extension.
 - **Admin**: Added **Plugin Marketplace** with remote fetching and one-click installation.
 - **Admin**: Enhanced **Integrity Monitor** with local hash verification and remote update checker.
+- **Admin**: Implemented **OTA (Over-The-Air) Update System** with automatic backup and integrity verification.
 - **Core**: Added `fst_spa_page()` helper for manual SPA rendering mode.
+- **Security**: Added **Routing Leakage Protection** middleware to detect misconfigured URL rewriting.
 
 ### Removed
 - **Core**: Removed **Dynamic Routing** mode (dead code amputation) to enforce strict, whitelist-based routing.
@@ -38,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core**: Simplified `fullstuck.json` schema by removing nested routing modes (`static_config`/`dynamic_config`).
 - **Admin**: Streamlined **System Monitor** by removing routing mode status display.
 - **Admin**: Updated **Scan Project** registry to remove deleted view functions and include new core helpers.
+- **Documentation**: Enhanced **Deployment Guide** with full `.htaccess` templates for Apache/LiteSpeed.
 
 ### Fixed
 - **Compiler**: Fixed aggressive PHP tag removal that corrupted string literals in source files (e.g., scaffolding templates in `install.php`).
@@ -56,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Improvement**: Updated `src/assets/fst.js` to use block comments for safer compilation.
 - **Security**: Patched XPath Injection vulnerability in `fst_extract_html_fragment()` with strict regex validation for ID and Class selectors.
 - **Fix**: Optional route parameter parsing order in `src/router.php`.
+- **Admin**: Fixed false-positive database connection failure in System Monitor due to lazy-loading connection state.
 
 ### Security (Code Review Hardening)
 - **Database**: Fixed **SQL Injection** vulnerability in `fst_db_select()` `order_by` option — user input is now sanitized via `_fst_sanitize_order_by()` with whitelist regex.
