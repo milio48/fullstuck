@@ -709,7 +709,6 @@ HTML;
                     <form action='{$admin_base}/plugins/install' method='POST' style='display:inline;' data-no-spa>
                         {$csrf}
                         <input type='hidden' name='id' value='" . htmlspecialchars($id) . "'>
-                        <input type='hidden' name='url' value='" . htmlspecialchars($plugin['url'] ?? '') . "'>
                         <button type='submit' style='{$btn_style}'>{$btn_text}</button>
                     </form>
                 </td>";
@@ -769,6 +768,10 @@ HTML;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $id = $_POST['id'] ?? '';
+        if (empty($id)) {
+            fst_flash_set('error_message', 'Invalid plugin ID.');
+            fst_redirect($admin_base . '/plugins');
+        }
         
         // 1. Ambil registry resmi untuk validasi (Whitelist)
         $remote_store_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/store.json";
