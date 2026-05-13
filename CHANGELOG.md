@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Installer**: Added **Auto-Scaffolding** to generate starter project files (`router.php`, `views/`, `assets/`) during installation.
 - **Installer**: Added **Zero-Config SPA** toggle to the installation wizard.
+- **Installer**: Added **CLI Headless Init** (`php fullstuck.php init --db=... --admin-pass=... --spa=yes --scaffold=yes`) for advanced developer setup bypass.
 - **Core**: Added **Strict Route Detection** to prevent duplicate route definitions.
 - **Core**: Added **PostgreSQL** driver support via PDO.
 - **Core**: Added `fst-plugins/` Auto-Discovery for modular framework extension.

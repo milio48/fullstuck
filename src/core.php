@@ -25,7 +25,25 @@ if (!defined('FST_ROOT_DIR')) {
     define('FST_ROOT_DIR', realpath($root) ?: $root);
 }
 define('FST_CONFIG_FILE', FST_ROOT_DIR . DIRECTORY_SEPARATOR . 'fullstuck.json');
+
+// Handle CLI Commands
+if (php_sapi_name() === 'cli') {
+    global $argv;
+    if (isset($argv[1]) && $argv[1] === 'init') {
+        if (file_exists(FST_CONFIG_FILE)) {
+            echo "Error: fullstuck.json already exists. Delete it first if you want to re-initialize.\n";
+            exit(1);
+        }
+        fst_handle_installation();
+        exit(0);
+    }
+}
+
 if (!file_exists(FST_CONFIG_FILE)) {
+    if (php_sapi_name() === 'cli') {
+        echo "Error: fullstuck.json not found. Run 'php fullstuck.php init' with arguments to initialize, or access via web browser.\n";
+        exit(1);
+    }
     fst_handle_installation();
     die();
 }

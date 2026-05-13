@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 9951e1f92bdd65df58ad28f653fc6dd70bdf39195a833adc0cb55b9b06b92b9f
+ * 💡 Version: 0.1.0 | FST_HASH: f3cd79bae013f93fa6c08d5e39585ff21bde27d0d83f98e69aca4ed995363663
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\')); document.addEventListener(\'submit\', async function(e) { if (e.defaultPrevented) return; const form = e.target; if (form.hasAttribute(\'data-no-spa\') || form.classList.contains(\'no-spa\')) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = form.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = form.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const method = (form.getAttribute(\'method\') || \'GET\').toUpperCase(); const action = form.getAttribute(\'action\') || window.location.href; const formData = new FormData(form); const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; let fetchOptions = { method, headers }; let finalUrl = action; if (method === \'GET\') { const params = new URLSearchParams(formData); finalUrl = action.includes(\'?\') ? `${action}&${params.toString()}` : `${action}?${params.toString()}`; } else { fetchOptions.body = formData; } const response = await fetch(finalUrl, fetchOptions); if (response.redirected) { window.location.href = response.url; return; } if (!response.ok && response.status !== 400 && response.status !== 422) { window.location.href = finalUrl; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut && method === \'GET\') { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', finalUrl); } document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.reload(); } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } });');
 
@@ -35,7 +35,25 @@ if (!defined('FST_ROOT_DIR')) {
     define('FST_ROOT_DIR', realpath($root) ?: $root);
 }
 define('FST_CONFIG_FILE', FST_ROOT_DIR . DIRECTORY_SEPARATOR . 'fullstuck.json');
+
+
+if (php_sapi_name() === 'cli') {
+    global $argv;
+    if (isset($argv[1]) && $argv[1] === 'init') {
+        if (file_exists(FST_CONFIG_FILE)) {
+            echo "Error: fullstuck.json already exists. Delete it first if you want to re-initialize.\n";
+            exit(1);
+        }
+        fst_handle_installation();
+        exit(0);
+    }
+}
+
 if (!file_exists(FST_CONFIG_FILE)) {
+    if (php_sapi_name() === 'cli') {
+        echo "Error: fullstuck.json not found. Run 'php fullstuck.php init' with arguments to initialize, or access via web browser.\n";
+        exit(1);
+    }
     fst_handle_installation();
     die();
 }
@@ -930,28 +948,50 @@ function fst_validate($data, $rules) {
 // FILE: install.php
 function fst_handle_installation() {
     $error_message = null;
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $is_cli = php_sapi_name() === 'cli';
+    $is_submit = $is_cli || $_SERVER['REQUEST_METHOD'] === 'POST';
+    
+    if ($is_submit) {
         try {
-            $driver = $_POST['driver'] ?? 'sqlite';
-            $server_type = $_POST['server_type'] ?? 'apache_litespeed';
+            $input_data = [];
+            if ($is_cli) {
+                global $argv;
+                foreach ($argv as $arg) {
+                    if (preg_match('/^--([^=]+)=(.*)$/', $arg, $m)) {
+                        $input_data[str_replace('-', '_', $m[1])] = $m[2];
+                    }
+                }
+                $input_data['driver'] = $input_data['db'] ?? 'sqlite';
+                $input_data['admin_url'] = $input_data['admin_url'] ?? '/stuck';
+                $input_data['admin_pass'] = $input_data['admin_pass'] ?? 'admin';
+                $input_data['enable_spa'] = ($input_data['spa'] ?? 'yes') === 'yes' ? '1' : '0';
+                $input_data['generate_starter'] = ($input_data['scaffold'] ?? 'yes') === 'yes' ? '1' : '0';
+                $input_data['download_docs'] = '1';
+                $input_data['server_type'] = 'other';
+            } else {
+                $input_data = $_POST;
+            }
+
+            $driver = $input_data['driver'] ?? 'sqlite';
+            $server_type = $input_data['server_type'] ?? 'apache_litespeed';
             
             if ($driver !== 'none') {
-                if ($driver === 'mysql') { $dsn = "mysql:host={$_POST['db_host']};dbname={$_POST['db_name']};charset=utf8mb4"; new PDO($dsn, $_POST['db_user'], $_POST['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
-                elseif ($driver === 'pgsql') { $port = $_POST['db_port'] ?: '5432'; $dsn = "pgsql:host={$_POST['db_host']};port={$port};dbname={$_POST['db_name']}"; new PDO($dsn, $_POST['db_user'], $_POST['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
-                else { $path = FST_ROOT_DIR . '/' . $_POST['db_path']; $dir = dirname($path); if (!is_dir($dir) && !mkdir($dir, 0755, true)) throw new Exception("Failed to create folder '{$dir}'. Check permissions."); new PDO("sqlite:" . $path, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); }
+                if ($driver === 'mysql') { $dsn = "mysql:host={$input_data['db_host']};dbname={$input_data['db_name']};charset=utf8mb4"; new PDO($dsn, $input_data['db_user'], $input_data['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
+                elseif ($driver === 'pgsql') { $port = $input_data['db_port'] ?: '5432'; $dsn = "pgsql:host={$input_data['db_host']};port={$port};dbname={$input_data['db_name']}"; new PDO($dsn, $input_data['db_user'], $input_data['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
+                else { $path = FST_ROOT_DIR . '/' . ($input_data['db_path'] ?? 'database.sqlite'); $dir = dirname($path); if (!is_dir($dir) && !mkdir($dir, 0755, true)) throw new Exception("Failed to create folder '{$dir}'. Check permissions."); new PDO("sqlite:" . $path, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); }
             }
             
             $config_data = [
                 "environment" => "development", 
                 "admin" => [
-                    "page_url" => $_POST['admin_url'] ?? '/stuck',
-                    "password" => password_hash($_POST['admin_pass'], PASSWORD_DEFAULT)
+                    "page_url" => $input_data['admin_url'] ?? '/stuck',
+                    "password" => password_hash($input_data['admin_pass'], PASSWORD_DEFAULT)
                 ],
                 "database" => [
                     "driver" => $driver,
-                    "mysql" => ["host" => $_POST['db_host'] ?? 'localhost', "dbname" => $_POST['db_name'] ?? '', "username" => $_POST['db_user'] ?? 'root', "password" => $_POST['db_pass'] ?? ''],
-                    "sqlite" => ["database_path" => $_POST['db_path'] ?? 'database.sqlite'],
-                    "pgsql" => ["host" => $_POST['db_host'] ?? 'localhost', "port" => $_POST['db_port'] ?? '5432', "dbname" => $_POST['db_name'] ?? '', "username" => $_POST['db_user'] ?? 'postgres', "password" => $_POST['db_pass'] ?? '']
+                    "mysql" => ["host" => $input_data['db_host'] ?? 'localhost', "dbname" => $input_data['db_name'] ?? '', "username" => $input_data['db_user'] ?? 'root', "password" => $input_data['db_pass'] ?? ''],
+                    "sqlite" => ["database_path" => $input_data['db_path'] ?? 'database.sqlite'],
+                    "pgsql" => ["host" => $input_data['db_host'] ?? 'localhost', "port" => $input_data['db_port'] ?? '5432', "dbname" => $input_data['db_name'] ?? '', "username" => $input_data['db_user'] ?? 'postgres', "password" => $input_data['db_pass'] ?? '']
                 ],
                 "routing" => [
                     "base_path" => "/",
@@ -960,7 +1000,7 @@ function fst_handle_installation() {
                     "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
                 ],
                 "spa" => [
-                    "enabled" => isset($_POST['enable_spa']) && $_POST['enable_spa'] === '1',
+                    "enabled" => isset($input_data['enable_spa']) && $input_data['enable_spa'] === '1',
                     "default_target" => "body",
                     "header_request" => "X-FST-Request",
                     "header_target" => "X-FST-Target",
@@ -989,7 +1029,7 @@ function fst_handle_installation() {
             }
 
             
-            if (isset($_POST['download_docs']) && $_POST['download_docs'] === '1') {
+            if (isset($input_data['download_docs']) && $input_data['download_docs'] === '1') {
                 $docs_content = @file_get_contents(FST_DOCS_URL);
                 if ($docs_content) {
                     $docs_filename = 'fullstuck_v' . FST_VERSION . '.md';
@@ -998,7 +1038,7 @@ function fst_handle_installation() {
             }
 
             
-            if (isset($_POST['generate_starter']) && $_POST['generate_starter'] === '1') {
+            if (isset($input_data['generate_starter']) && $input_data['generate_starter'] === '1') {
                 @mkdir(FST_ROOT_DIR . '/assets', 0755, true);
                 @file_put_contents(FST_ROOT_DIR . '/assets/style.css', "body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; margin-top: 50px; background: #f8f9fa; color: #333; } a { color: #007bff; text-decoration: none; } a:hover { text-decoration: underline; }");
 
@@ -1014,7 +1054,7 @@ function fst_handle_installation() {
 <body>
     <h1>🚀 Welcome to FullStuck!</h1>
     <p>Your AI-Friendly Micro Framework is running perfectly.</p>
-    <p><a href="{$_POST['admin_url']}" data-no-spa>Go to Admin Dashboard</a></p>
+    <p><a href="{$input_data['admin_url']}" data-no-spa>Go to Admin Dashboard</a></p>
 </body>
 </html>
 HTML;
@@ -1024,10 +1064,23 @@ HTML;
                 @file_put_contents(FST_ROOT_DIR . '/router.php', $router_code);
             }
 
+            if ($is_cli) {
+                echo "FullStuck initialized successfully!\n";
+                return;
+            }
+
             echo fst_show_install_success($htaccess_content); return;
-        } catch (Exception $e) { $error_message = "ERROR: " . $e->getMessage(); }
+        } catch (Exception $e) { 
+            if ($is_cli) {
+                echo "ERROR: " . $e->getMessage() . "\n";
+                exit(1);
+            }
+            $error_message = "ERROR: " . $e->getMessage(); 
+        }
     }
-    echo fst_show_install_form($error_message);
+    if (!$is_cli) {
+        echo fst_show_install_form($error_message);
+    }
 }
 function fst_render_status_row($label, $success, $note = '', $optional = false) { if ($success) $status = '<span style="color:green;">✔ OK</span>'; else if ($optional) $status = '<span style="color:orange;">⚠ Optional</span>'; else $status = '<span style="color:red;">❌ Failed</span>'; return "<tr><td>{$label}</td><td>{$status}</td><td>" . htmlspecialchars($note) . "</td></tr>"; }
 function fst_show_install_success($htaccess_content) { $htaccess_html = ''; if ($htaccess_content) { $htaccess_safe = htmlspecialchars($htaccess_content); $htaccess_html = <<<HTML
@@ -1106,6 +1159,7 @@ if (fst_is_dev()) {
 
     fst_get($admin_base . '/config', 'fst_admin_show_config');
     fst_post($admin_base . '/config/save', 'fst_admin_save_config');
+    fst_post($admin_base . '/config/hash', function() use ($admin_base) { fst_admin_check_auth(); fst_flash_set('success_message', 'Hash: ' . password_hash($_POST['new_pass'], PASSWORD_DEFAULT)); fst_redirect($admin_base.'/config'); });
 
     fst_get($admin_base . '/routes', 'fst_admin_show_routes');
     
@@ -1402,6 +1456,7 @@ HTML;
         
         $content = <<<HTML
 <p>Edit the raw JSON configuration below. Be careful with syntax!</p>
+<form action="{$admin_base}/config/hash" method="POST" data-no-spa style="margin-bottom:15px; padding:10px; background:#f4f4f4; border-radius:5px;">{$csrf}<strong>Generate Password Hash:</strong> <input type="text" name="new_pass" placeholder="Type new password" required> <button type="submit">Generate</button></form>
 <form action="{$admin_base}/config/save" method="POST" data-no-spa>
     {$csrf}
     <textarea name="config_content" spellcheck="false">{$config_content}</textarea>

@@ -11,6 +11,7 @@ if (fst_is_dev()) {
 
     fst_get($admin_base . '/config', 'fst_admin_show_config');
     fst_post($admin_base . '/config/save', 'fst_admin_save_config');
+    fst_post($admin_base . '/config/hash', function() use ($admin_base) { fst_admin_check_auth(); fst_flash_set('success_message', 'Hash: ' . password_hash($_POST['new_pass'], PASSWORD_DEFAULT)); fst_redirect($admin_base.'/config'); });
 
     fst_get($admin_base . '/routes', 'fst_admin_show_routes');
     
@@ -307,6 +308,7 @@ HTML;
         
         $content = <<<HTML
 <p>Edit the raw JSON configuration below. Be careful with syntax!</p>
+<form action="{$admin_base}/config/hash" method="POST" data-no-spa style="margin-bottom:15px; padding:10px; background:#f4f4f4; border-radius:5px;">{$csrf}<strong>Generate Password Hash:</strong> <input type="text" name="new_pass" placeholder="Type new password" required> <button type="submit">Generate</button></form>
 <form action="{$admin_base}/config/save" method="POST" data-no-spa>
     {$csrf}
     <textarea name="config_content" spellcheck="false">{$config_content}</textarea>

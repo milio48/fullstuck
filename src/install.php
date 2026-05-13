@@ -1,28 +1,50 @@
 <?php
 function fst_handle_installation() {
     $error_message = null;
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $is_cli = php_sapi_name() === 'cli';
+    $is_submit = $is_cli || $_SERVER['REQUEST_METHOD'] === 'POST';
+    
+    if ($is_submit) {
         try {
-            $driver = $_POST['driver'] ?? 'sqlite';
-            $server_type = $_POST['server_type'] ?? 'apache_litespeed';
+            $input_data = [];
+            if ($is_cli) {
+                global $argv;
+                foreach ($argv as $arg) {
+                    if (preg_match('/^--([^=]+)=(.*)$/', $arg, $m)) {
+                        $input_data[str_replace('-', '_', $m[1])] = $m[2];
+                    }
+                }
+                $input_data['driver'] = $input_data['db'] ?? 'sqlite';
+                $input_data['admin_url'] = $input_data['admin_url'] ?? '/stuck';
+                $input_data['admin_pass'] = $input_data['admin_pass'] ?? 'admin';
+                $input_data['enable_spa'] = ($input_data['spa'] ?? 'yes') === 'yes' ? '1' : '0';
+                $input_data['generate_starter'] = ($input_data['scaffold'] ?? 'yes') === 'yes' ? '1' : '0';
+                $input_data['download_docs'] = '1';
+                $input_data['server_type'] = 'other';
+            } else {
+                $input_data = $_POST;
+            }
+
+            $driver = $input_data['driver'] ?? 'sqlite';
+            $server_type = $input_data['server_type'] ?? 'apache_litespeed';
             
             if ($driver !== 'none') {
-                if ($driver === 'mysql') { $dsn = "mysql:host={$_POST['db_host']};dbname={$_POST['db_name']};charset=utf8mb4"; new PDO($dsn, $_POST['db_user'], $_POST['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
-                elseif ($driver === 'pgsql') { $port = $_POST['db_port'] ?: '5432'; $dsn = "pgsql:host={$_POST['db_host']};port={$port};dbname={$_POST['db_name']}"; new PDO($dsn, $_POST['db_user'], $_POST['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
-                else { $path = FST_ROOT_DIR . '/' . $_POST['db_path']; $dir = dirname($path); if (!is_dir($dir) && !mkdir($dir, 0755, true)) throw new Exception("Failed to create folder '{$dir}'. Check permissions."); new PDO("sqlite:" . $path, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); }
+                if ($driver === 'mysql') { $dsn = "mysql:host={$input_data['db_host']};dbname={$input_data['db_name']};charset=utf8mb4"; new PDO($dsn, $input_data['db_user'], $input_data['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
+                elseif ($driver === 'pgsql') { $port = $input_data['db_port'] ?: '5432'; $dsn = "pgsql:host={$input_data['db_host']};port={$port};dbname={$input_data['db_name']}"; new PDO($dsn, $input_data['db_user'], $input_data['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
+                else { $path = FST_ROOT_DIR . '/' . ($input_data['db_path'] ?? 'database.sqlite'); $dir = dirname($path); if (!is_dir($dir) && !mkdir($dir, 0755, true)) throw new Exception("Failed to create folder '{$dir}'. Check permissions."); new PDO("sqlite:" . $path, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); }
             }
             
             $config_data = [
                 "environment" => "development", 
                 "admin" => [
-                    "page_url" => $_POST['admin_url'] ?? '/stuck',
-                    "password" => password_hash($_POST['admin_pass'], PASSWORD_DEFAULT)
+                    "page_url" => $input_data['admin_url'] ?? '/stuck',
+                    "password" => password_hash($input_data['admin_pass'], PASSWORD_DEFAULT)
                 ],
                 "database" => [
                     "driver" => $driver,
-                    "mysql" => ["host" => $_POST['db_host'] ?? 'localhost', "dbname" => $_POST['db_name'] ?? '', "username" => $_POST['db_user'] ?? 'root', "password" => $_POST['db_pass'] ?? ''],
-                    "sqlite" => ["database_path" => $_POST['db_path'] ?? 'database.sqlite'],
-                    "pgsql" => ["host" => $_POST['db_host'] ?? 'localhost', "port" => $_POST['db_port'] ?? '5432', "dbname" => $_POST['db_name'] ?? '', "username" => $_POST['db_user'] ?? 'postgres', "password" => $_POST['db_pass'] ?? '']
+                    "mysql" => ["host" => $input_data['db_host'] ?? 'localhost', "dbname" => $input_data['db_name'] ?? '', "username" => $input_data['db_user'] ?? 'root', "password" => $input_data['db_pass'] ?? ''],
+                    "sqlite" => ["database_path" => $input_data['db_path'] ?? 'database.sqlite'],
+                    "pgsql" => ["host" => $input_data['db_host'] ?? 'localhost', "port" => $input_data['db_port'] ?? '5432', "dbname" => $input_data['db_name'] ?? '', "username" => $input_data['db_user'] ?? 'postgres', "password" => $input_data['db_pass'] ?? '']
                 ],
                 "routing" => [
                     "base_path" => "/",
@@ -31,7 +53,7 @@ function fst_handle_installation() {
                     "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
                 ],
                 "spa" => [
-                    "enabled" => isset($_POST['enable_spa']) && $_POST['enable_spa'] === '1',
+                    "enabled" => isset($input_data['enable_spa']) && $input_data['enable_spa'] === '1',
                     "default_target" => "body",
                     "header_request" => "X-FST-Request",
                     "header_target" => "X-FST-Target",
@@ -60,7 +82,7 @@ function fst_handle_installation() {
             }
 
             // Download Documentation for AI if requested
-            if (isset($_POST['download_docs']) && $_POST['download_docs'] === '1') {
+            if (isset($input_data['download_docs']) && $input_data['download_docs'] === '1') {
                 $docs_content = @file_get_contents(FST_DOCS_URL);
                 if ($docs_content) {
                     $docs_filename = 'fullstuck_v' . FST_VERSION . '.md';
@@ -69,7 +91,7 @@ function fst_handle_installation() {
             }
 
             // Auto-Scaffolding Starter Project
-            if (isset($_POST['generate_starter']) && $_POST['generate_starter'] === '1') {
+            if (isset($input_data['generate_starter']) && $input_data['generate_starter'] === '1') {
                 @mkdir(FST_ROOT_DIR . '/assets', 0755, true);
                 @file_put_contents(FST_ROOT_DIR . '/assets/style.css', "body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; text-align: center; margin-top: 50px; background: #f8f9fa; color: #333; } a { color: #007bff; text-decoration: none; } a:hover { text-decoration: underline; }");
 
@@ -85,7 +107,7 @@ function fst_handle_installation() {
 <body>
     <h1>🚀 Welcome to FullStuck!</h1>
     <p>Your AI-Friendly Micro Framework is running perfectly.</p>
-    <p><a href="{$_POST['admin_url']}" data-no-spa>Go to Admin Dashboard</a></p>
+    <p><a href="{$input_data['admin_url']}" data-no-spa>Go to Admin Dashboard</a></p>
 </body>
 </html>
 HTML;
@@ -95,10 +117,23 @@ HTML;
                 @file_put_contents(FST_ROOT_DIR . '/router.php', $router_code);
             }
 
+            if ($is_cli) {
+                echo "FullStuck initialized successfully!\n";
+                return;
+            }
+
             echo fst_show_install_success($htaccess_content); return;
-        } catch (Exception $e) { $error_message = "ERROR: " . $e->getMessage(); }
+        } catch (Exception $e) { 
+            if ($is_cli) {
+                echo "ERROR: " . $e->getMessage() . "\n";
+                exit(1);
+            }
+            $error_message = "ERROR: " . $e->getMessage(); 
+        }
     }
-    echo fst_show_install_form($error_message);
+    if (!$is_cli) {
+        echo fst_show_install_form($error_message);
+    }
 }
 function fst_render_status_row($label, $success, $note = '', $optional = false) { if ($success) $status = '<span style="color:green;">✔ OK</span>'; else if ($optional) $status = '<span style="color:orange;">⚠ Optional</span>'; else $status = '<span style="color:red;">❌ Failed</span>'; return "<tr><td>{$label}</td><td>{$status}</td><td>" . htmlspecialchars($note) . "</td></tr>"; }
 function fst_show_install_success($htaccess_content) { $htaccess_html = ''; if ($htaccess_content) { $htaccess_safe = htmlspecialchars($htaccess_content); $htaccess_html = <<<HTML
@@ -163,4 +198,6 @@ $html = <<<HTML
 HTML;
 return $html;
 }
+
+
 ?>
