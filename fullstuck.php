@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: ac32e25f55c07bfc9ca4a5e2e6e44ceb1becc4ea097c4fcc9dd14e87a226ca93
+ * 💡 Version: 0.1.0 | FST_HASH: 0061584ce3b9cc6a9eef5f584e8465ccededde8afa91897ee36e17e2cc7f4bfb
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); const redirectUrl = response.headers.get(\'X-FST-Redirect\'); if (redirectUrl) { window.location.href = redirectUrl; return; } if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); const newTitle = html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i); if (newTitle) document.title = newTitle[1]; const bodyAttrs = response.headers.get(\'X-FST-Body-Attrs\'); if (bodyAttrs !== null && targetSelector === \'body\') { const tmp = document.createElement(\'div\'); tmp.innerHTML = `<div ${bodyAttrs}></div>`; const newBody = tmp.firstChild; Array.from(document.body.attributes).forEach(attr => document.body.removeAttribute(attr.name)); Array.from(newBody.attributes).forEach(attr => document.body.setAttribute(attr.name, attr.value)); } if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); if (e.state.fstBodyAttrs && e.state.fstTarget === \'body\') { const tmp = document.createElement(\'div\'); tmp.innerHTML = `<div ${e.state.fstBodyAttrs}></div>`; const newBody = tmp.firstChild; Array.from(document.body.attributes).forEach(attr => document.body.removeAttribute(attr.name)); Array.from(newBody.attributes).forEach(attr => document.body.setAttribute(attr.name, attr.value)); } targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\')); document.addEventListener(\'submit\', async function(e) { if (e.defaultPrevented) return; const form = e.target; if (form.hasAttribute(\'data-no-spa\') || form.classList.contains(\'no-spa\')) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = form.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = form.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const method = (form.getAttribute(\'method\') || \'GET\').toUpperCase(); const action = form.getAttribute(\'action\') || window.location.href; const formData = new FormData(form); const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; let fetchOptions = { method, headers }; let finalUrl = action; if (method === \'GET\') { const params = new URLSearchParams(formData); finalUrl = action.includes(\'?\') ? `${action}&${params.toString()}` : `${action}?${params.toString()}`; } else { fetchOptions.body = formData; } const response = await fetch(finalUrl, fetchOptions); const redirectUrl = response.headers.get(\'X-FST-Redirect\'); if (redirectUrl) { window.location.href = redirectUrl; return; } if (response.redirected) { window.location.href = response.url; return; } if (!response.ok && response.status !== 400 && response.status !== 422) { window.location.href = finalUrl; return; } const html = await response.text(); const newTitle = html.match(/<title[^>]*>([\\s\\S]*?)<\\/title>/i); if (newTitle) document.title = newTitle[1]; const bodyAttrs = response.headers.get(\'X-FST-Body-Attrs\'); if (bodyAttrs !== null && targetSelector === \'body\') { const tmp = document.createElement(\'div\'); tmp.innerHTML = `<div ${bodyAttrs}></div>`; const newBody = tmp.firstChild; Array.from(document.body.attributes).forEach(attr => document.body.removeAttribute(attr.name)); Array.from(newBody.attributes).forEach(attr => document.body.setAttribute(attr.name, attr.value)); } if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut && method === \'GET\') { window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, \'\', finalUrl); } document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.reload(); } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } });');
 
@@ -834,54 +834,85 @@ function fst_csrf_check() {
 }
 
 function fst_upload($key, $folder, $options = []) {
-    $file = fst_file($key);
-    if (!$file) return ['success' => false, 'error' => 'No file uploaded or upload error.', 'path' => null];
-    $max_size_kb = $options['max_size'] ?? 2048;
-    $allowed_types = $options['allowed_types'] ?? [];
-    if ($file['size'] > $max_size_kb * 1024) return ['success' => false, 'error' => "File is too large (max {$max_size_kb} KB).", 'path' => null];
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!empty($options['allowed_types']) && !in_array($ext, $options['allowed_types'])) return ['success' => false, 'error' => "Extension `{$ext}` is not allowed.", 'path' => null];
+    if (!isset($_FILES[$key])) return ['success' => false, 'error' => 'No file uploaded.', 'path' => null];
     
+    $files_input = $_FILES[$key];
+    $is_multiple = is_array($files_input['name']);
     
-    if (function_exists('finfo_open')) {
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $actual_mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-
-        if (strpos($actual_mime, 'php') !== false || $actual_mime === 'text/x-php') {
-            return ['success' => false, 'error' => "Security Error: Malicious file signature detected.", 'path' => null];
+    $process_single = function($name, $tmp_name, $size, $error) use ($folder, $options) {
+        if ($error !== UPLOAD_ERR_OK) return ['success' => false, 'error' => 'Upload error code: ' . $error, 'path' => null];
+        
+        $max_size_kb = $options['max_size'] ?? 2048;
+        if ($size > $max_size_kb * 1024) return ['success' => false, 'error' => "File is too large (max {$max_size_kb} KB).", 'path' => null];
+        
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        if (!empty($options['allowed_types']) && !in_array($ext, $options['allowed_types'])) {
+            return ['success' => false, 'error' => "Extension `{$ext}` is not allowed.", 'path' => null];
         }
         
-        if (!empty($options['allowed_mimes']) && !in_array($actual_mime, $options['allowed_mimes'])) {
-             return ['success' => false, 'error' => "Invalid MIME type: " . $actual_mime, 'path' => null];
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $actual_mime = finfo_file($finfo, $tmp_name);
+            finfo_close($finfo);
+            if (strpos($actual_mime, 'php') !== false || $actual_mime === 'text/x-php') {
+                return ['success' => false, 'error' => "Security Error: Malicious file signature detected.", 'path' => null];
+            }
+            if (!empty($options['allowed_mimes']) && !in_array($actual_mime, $options['allowed_mimes'])) {
+                return ['success' => false, 'error' => "Invalid MIME type: " . $actual_mime, 'path' => null];
+            }
         }
+        
+        $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($name, ".".$ext));
+        $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
+        $destination_folder = rtrim(FST_ROOT_DIR . '/' . trim($folder, '/'), '/');
+        if (!is_dir($destination_folder) && !mkdir($destination_folder, 0755, true)) return ['success' => false, 'error' => "Failed to create upload directory.", 'path' => null];
+        
+        $real_destination = realpath($destination_folder);
+        if (!$real_destination || !str_starts_with($real_destination, realpath(FST_ROOT_DIR))) {
+            return ['success' => false, 'error' => 'Security Error: Invalid upload directory path.', 'path' => null];
+        }
+        
+        $destination_path = $real_destination . DIRECTORY_SEPARATOR . $filename;
+        $public_path = trim($folder, '/') . '/' . $filename;
+        
+        if (move_uploaded_file($tmp_name, $destination_path)) {
+            return ['success' => true, 'path' => $public_path, 'error' => null, 'original_name' => $name];
+        }
+        return ['success' => false, 'error' => 'Failed to move uploaded file.', 'path' => null];
+    };
+    
+    if (!$is_multiple) {
+        return $process_single($files_input['name'], $files_input['tmp_name'], $files_input['size'], $files_input['error']);
+    } else {
+        $results = [];
+        for ($i = 0; $i < count($files_input['name']); $i++) {
+            $results[] = $process_single($files_input['name'][$i], $files_input['tmp_name'][$i], $files_input['size'][$i], $files_input['error'][$i]);
+        }
+        return $results;
     }
-
-    $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($file['name'], ".".$ext));
-    $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
-    
-    $destination_folder = rtrim(FST_ROOT_DIR . '/' . trim($folder, '/'), '/');
-    if (!is_dir($destination_folder) && !mkdir($destination_folder, 0755, true)) return ['success' => false, 'error' => "Failed to create upload directory.", 'path' => null];
-    
-    
-    $real_destination = realpath($destination_folder);
-    if (!$real_destination || !str_starts_with($real_destination, realpath(FST_ROOT_DIR))) {
-        return ['success' => false, 'error' => 'Security Error: Invalid upload directory path.', 'path' => null];
-    }
-    
-    $destination_path = $real_destination . DIRECTORY_SEPARATOR . $filename;
-    $public_path = trim($folder, '/') . '/' . $filename;
-    if (move_uploaded_file($file['tmp_name'], $destination_path)) return ['success' => true, 'path' => $public_path, 'error' => null];
-    else return ['success' => false, 'error' => 'Failed to move uploaded file.', 'path' => null];
 }
 
 // FILE: view.php
+function fst_view_share($key, $value = null) {
+    $shared = fst_app('shared_view_data') ?? [];
+    if (is_array($key)) {
+        foreach ($key as $k => $v) {
+            $shared[$k] = $v;
+        }
+    } else {
+        $shared[$key] = $value;
+    }
+    fst_app('shared_view_data', $shared);
+}
+
 function fst_view($path, $data = []) {
     $__fst_file = realpath(FST_ROOT_DIR . '/' . $path);
     $__fst_root = realpath(FST_ROOT_DIR);
     if (!$__fst_file || !$__fst_root || !str_starts_with($__fst_file, $__fst_root)) {
         fst_abort(500, "Invalid view path.");
     }
+    $shared = fst_app('shared_view_data') ?? [];
+    extract($shared, EXTR_SKIP);
     extract($data, EXTR_SKIP);
     require $__fst_file;
 }

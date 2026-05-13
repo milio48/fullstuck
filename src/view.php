@@ -1,10 +1,24 @@
 <?php
+function fst_view_share($key, $value = null) {
+    $shared = fst_app('shared_view_data') ?? [];
+    if (is_array($key)) {
+        foreach ($key as $k => $v) {
+            $shared[$k] = $v;
+        }
+    } else {
+        $shared[$key] = $value;
+    }
+    fst_app('shared_view_data', $shared);
+}
+
 function fst_view($path, $data = []) {
     $__fst_file = realpath(FST_ROOT_DIR . '/' . $path);
     $__fst_root = realpath(FST_ROOT_DIR);
     if (!$__fst_file || !$__fst_root || !str_starts_with($__fst_file, $__fst_root)) {
         fst_abort(500, "Invalid view path.");
     }
+    $shared = fst_app('shared_view_data') ?? [];
+    extract($shared, EXTR_SKIP);
     extract($data, EXTR_SKIP);
     require $__fst_file;
 }

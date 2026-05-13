@@ -88,44 +88,61 @@ function fst_csrf_check() {
 }
 
 function fst_upload($key, $folder, $options = []) {
-    $file = fst_file($key);
-    if (!$file) return ['success' => false, 'error' => 'No file uploaded or upload error.', 'path' => null];
-    $max_size_kb = $options['max_size'] ?? 2048;
-    $allowed_types = $options['allowed_types'] ?? [];
-    if ($file['size'] > $max_size_kb * 1024) return ['success' => false, 'error' => "File is too large (max {$max_size_kb} KB).", 'path' => null];
-    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!empty($options['allowed_types']) && !in_array($ext, $options['allowed_types'])) return ['success' => false, 'error' => "Extension `{$ext}` is not allowed.", 'path' => null];
+    if (!isset($_FILES[$key])) return ['success' => false, 'error' => 'No file uploaded.', 'path' => null];
     
-    // [PATCH] Validasi MIME Type Asli
-    if (function_exists('finfo_open')) {
-        $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $actual_mime = finfo_file($finfo, $file['tmp_name']);
-        finfo_close($finfo);
-
-        if (strpos($actual_mime, 'php') !== false || $actual_mime === 'text/x-php') {
-            return ['success' => false, 'error' => "Security Error: Malicious file signature detected.", 'path' => null];
+    $files_input = $_FILES[$key];
+    $is_multiple = is_array($files_input['name']);
+    
+    $process_single = function($name, $tmp_name, $size, $error) use ($folder, $options) {
+        if ($error !== UPLOAD_ERR_OK) return ['success' => false, 'error' => 'Upload error code: ' . $error, 'path' => null];
+        
+        $max_size_kb = $options['max_size'] ?? 2048;
+        if ($size > $max_size_kb * 1024) return ['success' => false, 'error' => "File is too large (max {$max_size_kb} KB).", 'path' => null];
+        
+        $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+        if (!empty($options['allowed_types']) && !in_array($ext, $options['allowed_types'])) {
+            return ['success' => false, 'error' => "Extension `{$ext}` is not allowed.", 'path' => null];
         }
         
-        if (!empty($options['allowed_mimes']) && !in_array($actual_mime, $options['allowed_mimes'])) {
-             return ['success' => false, 'error' => "Invalid MIME type: " . $actual_mime, 'path' => null];
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $actual_mime = finfo_file($finfo, $tmp_name);
+            finfo_close($finfo);
+            if (strpos($actual_mime, 'php') !== false || $actual_mime === 'text/x-php') {
+                return ['success' => false, 'error' => "Security Error: Malicious file signature detected.", 'path' => null];
+            }
+            if (!empty($options['allowed_mimes']) && !in_array($actual_mime, $options['allowed_mimes'])) {
+                return ['success' => false, 'error' => "Invalid MIME type: " . $actual_mime, 'path' => null];
+            }
         }
+        
+        $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($name, ".".$ext));
+        $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
+        $destination_folder = rtrim(FST_ROOT_DIR . '/' . trim($folder, '/'), '/');
+        if (!is_dir($destination_folder) && !mkdir($destination_folder, 0755, true)) return ['success' => false, 'error' => "Failed to create upload directory.", 'path' => null];
+        
+        $real_destination = realpath($destination_folder);
+        if (!$real_destination || !str_starts_with($real_destination, realpath(FST_ROOT_DIR))) {
+            return ['success' => false, 'error' => 'Security Error: Invalid upload directory path.', 'path' => null];
+        }
+        
+        $destination_path = $real_destination . DIRECTORY_SEPARATOR . $filename;
+        $public_path = trim($folder, '/') . '/' . $filename;
+        
+        if (move_uploaded_file($tmp_name, $destination_path)) {
+            return ['success' => true, 'path' => $public_path, 'error' => null, 'original_name' => $name];
+        }
+        return ['success' => false, 'error' => 'Failed to move uploaded file.', 'path' => null];
+    };
+    
+    if (!$is_multiple) {
+        return $process_single($files_input['name'], $files_input['tmp_name'], $files_input['size'], $files_input['error']);
+    } else {
+        $results = [];
+        for ($i = 0; $i < count($files_input['name']); $i++) {
+            $results[] = $process_single($files_input['name'][$i], $files_input['tmp_name'][$i], $files_input['size'][$i], $files_input['error'][$i]);
+        }
+        return $results;
     }
-
-    $safe_basename = preg_replace("/[^a-zA-Z0-9\._-]/", "_", basename($file['name'], ".".$ext));
-    $filename = $safe_basename . '-' . uniqid() . '.' . $ext;
-    
-    $destination_folder = rtrim(FST_ROOT_DIR . '/' . trim($folder, '/'), '/');
-    if (!is_dir($destination_folder) && !mkdir($destination_folder, 0755, true)) return ['success' => false, 'error' => "Failed to create upload directory.", 'path' => null];
-    
-    // Keamanan Path Traversal
-    $real_destination = realpath($destination_folder);
-    if (!$real_destination || !str_starts_with($real_destination, realpath(FST_ROOT_DIR))) {
-        return ['success' => false, 'error' => 'Security Error: Invalid upload directory path.', 'path' => null];
-    }
-    
-    $destination_path = $real_destination . DIRECTORY_SEPARATOR . $filename;
-    $public_path = trim($folder, '/') . '/' . $filename;
-    if (move_uploaded_file($file['tmp_name'], $destination_path)) return ['success' => true, 'path' => $public_path, 'error' => null];
-    else return ['success' => false, 'error' => 'Failed to move uploaded file.', 'path' => null];
 }
 ?>
