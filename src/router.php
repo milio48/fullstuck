@@ -269,7 +269,20 @@ function fst_run() {
 
     if (fst_is_spa()) {
         $target = fst_spa_target();
+        
+        // 1. Selamatkan tag <title> dari output asli sebelum dipotong
+        $title_tag = '';
+        if (preg_match('/<title[^>]*>.*?<\/title>/is', $output, $matches)) {
+            $title_tag = $matches[0];
+        }
+
+        // 2. Potong HTML sesuai target (biasanya 'body')
         $output = fst_extract_html_fragment($output, $target); 
+
+        // 3. Sisipkan kembali tag <title> ke puncak fragmen agar terbaca oleh SPA Agent
+        if (!empty($title_tag)) {
+            $output = $title_tag . "\n" . $output;
+        }
     } 
     else if ($should_inject_spa) {
         $script_id = fst_config('spa.script_id', 'fst-spa-agent');
