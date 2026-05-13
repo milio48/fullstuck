@@ -83,8 +83,8 @@ Untuk berkontribusi atau membuat plugin resmi yang dapat diinstal melalui Admin 
 
 ### 7. Pembuatan Plugin (Manual)
 
-* **Aturan Penamaan:** File wajib berada di `fst-plugins/` dan berawalan `fst-` (contoh: `fst-hello.php`).
-* **Registrasi:** Wajib memanggil `fst_register_plugin()`.
+* **Aturan Penamaan:** File wajib berada di `fst-plugins/` dan mengikuti format `fst-{id}.php` (contoh: `fst-hello-world.php`).
+* **Registrasi:** Wajib memanggil `fst_register_plugin('{id}', ...)` dengan ID yang konsisten dengan nama file.
 * **Routing & Sub-halaman:** Karena menggunakan rute tunggal `/stuck/p/{id}`, gunakan variabel `$_GET['action']` atau `fst_input('action')` untuk membuat sub-halaman (misal: halaman settings).
 * **Keamanan Form:** Ingatkan pengembang untuk menggunakan `fst_method() === 'POST'`, `fst_csrf_check()`, `fst_csrf_field()`, dan `fst_redirect()` saat memproses form.
 
@@ -92,9 +92,9 @@ Untuk berkontribusi atau membuat plugin resmi yang dapat diinstal melalui Admin 
 
 ```php
 <?php
-// File: fst-plugins/fst-hello.php
+// File: fst-plugins/fst-hello-world.php
 
-fst_register_plugin('hello', [
+fst_register_plugin('hello-world', [
     'name' => 'Hello World',
     'menu_label' => 'Hello UI',
     'admin_route' => function() {
@@ -105,7 +105,7 @@ fst_register_plugin('hello', [
             fst_csrf_check(); // WAJIB untuk form
             $nama = fst_input('nama');
             fst_flash_set('success_message', 'Tersimpan: ' . fst_escape($nama));
-            fst_redirect('/stuck/p/hello');
+            fst_redirect('/stuck/p/hello-world');
         }
 
         if ($action === 'index') {
@@ -113,7 +113,7 @@ fst_register_plugin('hello', [
             if ($msg) echo "<p style='color:green;'>{\$msg}</p>";
             
             echo "<h2>Pengaturan Hello</h2>";
-            echo '<form method="POST" action="/stuck/p/hello">
+            echo '<form method="POST" action="/stuck/p/hello-world">
                     ' . fst_csrf_field() . '
                     <input type="text" name="nama" placeholder="Ketik nama...">
                     <button type="submit">Simpan</button>

@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Hello FullStuck
- * Description: Plugin perkenalan untuk mendemonstrasikan sistem Auto-Discovery.
- * Version: 1.0.0
+ * Description: Plugin perkenalan untuk mendemonstrasikan sistem Auto-Discovery dan Admin Interface.
+ * Version: 1.1.0
  */
 
-// Mendaftarkan route baru melalui plugin
+// Mendaftarkan route baru melalui plugin (Frontend)
 fst_get('/hello-world', function() {
     $style = "
         <style>
@@ -28,3 +28,34 @@ fst_get('/hello-world', function() {
         </div>
     ";
 });
+
+// Mendaftarkan antarmuka admin (Backend)
+fst_register_plugin('hello-world', [
+    'name' => 'Hello FullStuck',
+    'menu_label' => 'Hello World',
+    'admin_route' => function() {
+        $method = fst_method();
+        $action = fst_input('action', 'index');
+        
+        // Contoh Penanganan Form (Aman)
+        if ($method === 'POST') {
+            fst_csrf_check(); // Proteksi Mutlak CSRF
+            $nama = fst_input('nama');
+            fst_flash_set('success_message', 'Pengaturan tersimpan untuk: ' . fst_escape($nama));
+            fst_redirect(fst_config('admin.page_url', '/stuck') . '/p/hello-world');
+        }
+
+        if ($action === 'index') {
+            echo "<h2>Pengaturan Hello FullStuck</h2>";
+            echo "<p>Ini adalah halaman pengaturan khusus untuk plugin Hello World.</p>";
+            echo "<p>Coba kunjungi frontend route yang didaftarkan plugin ini: <a href='/hello-world' target='_blank'>/hello-world</a></p>";
+            
+            echo '<form method="POST" action="' . fst_config('admin.page_url', '/stuck') . '/p/hello-world" style="background:#f9f9f9; padding:20px; border:1px solid #ddd; max-width:400px; margin-top:20px;">
+                    ' . fst_csrf_field() . '
+                    <label style="display:block; margin-bottom:10px; font-weight:bold;">Nama Anda:</label>
+                    <input type="text" name="nama" placeholder="Ketik nama Anda di sini..." style="width:100%; padding:10px; margin-bottom:15px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;">
+                    <button type="submit" style="background:#007bff; color:white; border:none; padding:10px 15px; border-radius:4px; cursor:pointer;">Simpan Pengaturan</button>
+                  </form>';
+        }
+    }
+]);
