@@ -252,5 +252,10 @@ function fst_extract_html_fragment($html, $selector = 'body') {
     return $html;
 }
 
+function fst_register_plugin($id, $config) {
+    $plugins = fst_app('plugins') ?? [];
+    $plugins[$id] = $config;
+    fst_app('plugins', $plugins);
+}
 
 ?>

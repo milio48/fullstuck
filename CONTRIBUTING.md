@@ -80,3 +80,45 @@ Untuk berkontribusi atau membuat plugin resmi yang dapat diinstal melalui Admin 
    }
    ```
 5. **Keamanan**: Gunakan helper bawaan framework (seperti `fst_get`, `fst_post`, `fst_app`, dll) daripada memanggil variabel superglobal PHP secara langsung untuk menjaga keamanan dan portabilitas plugin.
+
+### 7. Pembuatan Plugin (Manual)
+
+* **Aturan Penamaan:** File wajib berada di `fst-plugins/` dan berawalan `fst-` (contoh: `fst-hello.php`).
+* **Registrasi:** Wajib memanggil `fst_register_plugin()`.
+* **Routing & Sub-halaman:** Karena menggunakan rute tunggal `/stuck/p/{id}`, gunakan variabel `$_GET['action']` atau `fst_input('action')` untuk membuat sub-halaman (misal: halaman settings).
+* **Keamanan Form:** Ingatkan pengembang untuk menggunakan `fst_method() === 'POST'`, `fst_csrf_check()`, `fst_csrf_field()`, dan `fst_redirect()` saat memproses form.
+
+**Contoh kode utuh:**
+
+```php
+<?php
+// File: fst-plugins/fst-hello.php
+
+fst_register_plugin('hello', [
+    'name' => 'Hello World',
+    'menu_label' => 'Hello UI',
+    'admin_route' => function() {
+        $method = fst_method();
+        $action = fst_input('action', 'index');
+
+        if ($method === 'POST') {
+            fst_csrf_check(); // WAJIB untuk form
+            $nama = fst_input('nama');
+            fst_flash_set('success_message', 'Tersimpan: ' . fst_escape($nama));
+            fst_redirect('/stuck/p/hello');
+        }
+
+        if ($action === 'index') {
+            $msg = fst_flash_get('success_message');
+            if ($msg) echo "<p style='color:green;'>{\$msg}</p>";
+            
+            echo "<h2>Pengaturan Hello</h2>";
+            echo '<form method="POST" action="/stuck/p/hello">
+                    ' . fst_csrf_field() . '
+                    <input type="text" name="nama" placeholder="Ketik nama...">
+                    <button type="submit">Simpan</button>
+                  </form>';
+        }
+    }
+]);
+```

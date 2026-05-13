@@ -25,6 +25,23 @@ if (fst_is_dev()) {
     fst_post($admin_base . '/plugins/install', 'fst_admin_install_plugin');
     fst_post($admin_base . '/plugins/toggle', 'fst_admin_toggle_plugin');
     fst_post($admin_base . '/plugins/uninstall', 'fst_admin_uninstall_plugin');
+
+    fst_any($admin_base . '/p/{id}', function($id) use ($admin_base) {
+        fst_admin_check_auth();
+        $plugins = fst_app('plugins') ?? [];
+        
+        if (!isset($plugins[$id]) || !is_callable($plugins[$id]['admin_route'] ?? null)) {
+            fst_abort(404, "Plugin '{$id}' tidak ditemukan atau tidak memiliki antarmuka admin.");
+        }
+
+        // Tangkap output plugin agar bisa dimasukkan ke layout admin
+        ob_start();
+        call_user_func($plugins[$id]['admin_route']);
+        $plugin_content = ob_get_clean();
+
+        $page_title = $plugins[$id]['menu_label'] ?? $plugins[$id]['name'] ?? 'Plugin';
+        fst_admin_render_page($page_title, $plugin_content);
+    });
 }
 
 
@@ -106,6 +123,13 @@ HTML;
          if ($success_msg) $info_html .= "<p style='color:green;'>" . htmlspecialchars($success_msg) . "</p>";
          if ($error_msg) $info_html .= "<p style='color:red;'>" . htmlspecialchars($error_msg) . "</p>";
          
+         $plugins = fst_app('plugins') ?? [];
+         $plugin_links = '';
+         foreach ($plugins as $p_id => $p_conf) {
+             $p_label = htmlspecialchars($p_conf['menu_label'] ?? $p_conf['name'] ?? $p_id);
+             $plugin_links .= "<a href=\"{$admin_base}/p/{$p_id}\" data-no-spa>🔌 {$p_label}</a>\n    ";
+         }
+         
          $html = <<<HTML
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>{$title} - Admin</title>
 <style>
@@ -148,7 +172,7 @@ HTML;
     <a href="{$admin_base}/scan" data-no-spa>Scan Project</a>
     <a href="{$admin_base}/integrity" data-no-spa>Integrity</a>
     <a href="{$admin_base}/plugins" data-no-spa>Plugins</a>
-    <a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
+    {$plugin_links}<a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
 </nav>
 <div class="container">
     <h1>{$title}</h1>

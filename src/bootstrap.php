@@ -4,7 +4,7 @@ $fst_config = fst_app('config');
 // 1. Load Plugins Terlebih Dahulu
 $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
 if (is_dir($plugin_dir)) {
-    foreach (glob($plugin_dir . '/*.php') as $plugin) {
+    foreach (glob($plugin_dir . '/fst-*.php') as $plugin) {
         require_once $plugin;
     }
 }

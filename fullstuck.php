@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 34d8c00814b56c96d31511cc3977ea173160c47334dc7328fd05724e4a71223f
+ * 💡 Version: 0.1.0 | FST_HASH: 677a6a09a2e3228dd098512b5b3ff43218fe7c104e06cc4327e9c945ca0bb2bd
  */
 define('FST_SPA_JS_CODE', 'document.addEventListener(\'click\', async function(e) { if (e.defaultPrevented) return; const link = e.target.closest(\'a\'); if (!link || !link.href || link.hasAttribute(\'data-no-spa\') || link.classList.contains(\'no-spa\') || link.target === \'_blank\' || link.hasAttribute(\'download\') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = link.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = link.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; const response = await fetch(link.href, { headers }); if (!response.ok) { window.location.href = link.href; return; } const contentType = response.headers.get(\'content-type\'); if (!contentType || !contentType.includes(\'text/html\')) { window.location.href = link.href; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut) { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', link.href); } const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.href = link.href; } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } }); window.addEventListener(\'popstate\', function(e) { if (e.state && e.state.fstHtml && e.state.fstTarget) { const targetElement = document.querySelector(e.state.fstTarget); if (targetElement) { document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = e.state.fstHtml; const scripts = targetElement.querySelectorAll(\'script\'); scripts.forEach(oldScript => { if (oldScript.id === \'fst-spa-agent\' || oldScript.hasAttribute(\'data-spa-ignore\')) return; const newScript = document.createElement(\'script\'); Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value)); newScript.appendChild(document.createTextNode(oldScript.innerHTML)); oldScript.parentNode.replaceChild(newScript, oldScript); }); document.dispatchEvent(new Event(\'fst:load\')); } else { window.location.reload(); } } else { window.location.reload(); } }); document.dispatchEvent(new Event(\'fst:load\')); document.addEventListener(\'submit\', async function(e) { if (e.defaultPrevented) return; const form = e.target; if (form.hasAttribute(\'data-no-spa\') || form.classList.contains(\'no-spa\')) return; e.preventDefault(); const reqHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-req-header\') || \'X-FST-Request\'; const targetHeader = document.querySelector(\'script#fst-spa-agent\')?.getAttribute(\'data-target-header\') || \'X-FST-Target\'; const targetSelector = form.getAttribute(\'data-fst-target\') || \'body\'; const isHistoryOptOut = form.getAttribute(\'data-fst-history\') === \'false\'; const targetElement = document.querySelector(targetSelector); if (targetElement) targetElement.classList.add(\'fst-loading\'); try { const method = (form.getAttribute(\'method\') || \'GET\').toUpperCase(); const action = form.getAttribute(\'action\') || window.location.href; const formData = new FormData(form); const headers = { [reqHeader]: \'true\', [targetHeader]: targetSelector }; let fetchOptions = { method, headers }; let finalUrl = action; if (method === \'GET\') { const params = new URLSearchParams(formData); finalUrl = action.includes(\'?\') ? `${action}&${params.toString()}` : `${action}?${params.toString()}`; } else { fetchOptions.body = formData; } const response = await fetch(finalUrl, fetchOptions); if (response.redirected) { window.location.href = response.url; return; } if (!response.ok && response.status !== 400 && response.status !== 422) { window.location.href = finalUrl; return; } const html = await response.text(); if (!targetElement) throw new Error(\'Target not found\'); document.dispatchEvent(new Event(\'fst:unload\')); targetElement.innerHTML = html; if (!isHistoryOptOut && method === \'GET\') { window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, \'\', finalUrl); } document.dispatchEvent(new Event(\'fst:load\')); } catch (err) { window.location.reload(); } finally { if (targetElement) targetElement.classList.remove(\'fst-loading\'); } });');
 
@@ -260,6 +260,12 @@ function fst_extract_html_fragment($html, $selector = 'body') {
         return $inner_html;
     }
     return $html;
+}
+
+function fst_register_plugin($id, $config) {
+    $plugins = fst_app('plugins') ?? [];
+    $plugins[$id] = $config;
+    fst_app('plugins', $plugins);
 }
 
 // FILE: database.php
@@ -1215,6 +1221,23 @@ if (fst_is_dev()) {
     fst_post($admin_base . '/plugins/install', 'fst_admin_install_plugin');
     fst_post($admin_base . '/plugins/toggle', 'fst_admin_toggle_plugin');
     fst_post($admin_base . '/plugins/uninstall', 'fst_admin_uninstall_plugin');
+
+    fst_any($admin_base . '/p/{id}', function($id) use ($admin_base) {
+        fst_admin_check_auth();
+        $plugins = fst_app('plugins') ?? [];
+        
+        if (!isset($plugins[$id]) || !is_callable($plugins[$id]['admin_route'] ?? null)) {
+            fst_abort(404, "Plugin '{$id}' tidak ditemukan atau tidak memiliki antarmuka admin.");
+        }
+
+        
+        ob_start();
+        call_user_func($plugins[$id]['admin_route']);
+        $plugin_content = ob_get_clean();
+
+        $page_title = $plugins[$id]['menu_label'] ?? $plugins[$id]['name'] ?? 'Plugin';
+        fst_admin_render_page($page_title, $plugin_content);
+    });
 }
 
 
@@ -1296,6 +1319,13 @@ HTML;
          if ($success_msg) $info_html .= "<p style='color:green;'>" . htmlspecialchars($success_msg) . "</p>";
          if ($error_msg) $info_html .= "<p style='color:red;'>" . htmlspecialchars($error_msg) . "</p>";
          
+         $plugins = fst_app('plugins') ?? [];
+         $plugin_links = '';
+         foreach ($plugins as $p_id => $p_conf) {
+             $p_label = htmlspecialchars($p_conf['menu_label'] ?? $p_conf['name'] ?? $p_id);
+             $plugin_links .= "<a href=\"{$admin_base}/p/{$p_id}\" data-no-spa>🔌 {$p_label}</a>\n    ";
+         }
+         
          $html = <<<HTML
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>{$title} - Admin</title>
 <style>
@@ -1338,7 +1368,7 @@ HTML;
     <a href="{$admin_base}/scan" data-no-spa>Scan Project</a>
     <a href="{$admin_base}/integrity" data-no-spa>Integrity</a>
     <a href="{$admin_base}/plugins" data-no-spa>Plugins</a>
-    <a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
+    {$plugin_links}<a href="{$admin_base}/logout" style="float:right;" data-no-spa>Logout</a>
 </nav>
 <div class="container">
     <h1>{$title}</h1>
@@ -2017,7 +2047,7 @@ $fst_config = fst_app('config');
 
 $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
 if (is_dir($plugin_dir)) {
-    foreach (glob($plugin_dir . '/*.php') as $plugin) {
+    foreach (glob($plugin_dir . '/fst-*.php') as $plugin) {
         require_once $plugin;
     }
 }
