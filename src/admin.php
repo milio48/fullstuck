@@ -769,24 +769,46 @@ HTML;
         $admin_base = $fst_config['admin']['page_url'] ?? '/stuck';
 
         $id = $_POST['id'] ?? '';
-        $url = $_POST['url'] ?? '';
-
-        if (empty($id) || empty($url)) {
-            fst_flash_set('error_message', 'Invalid plugin data.');
+        
+        // 1. Ambil registry resmi untuk validasi (Whitelist)
+        $remote_store_url = "https://raw.githubusercontent.com/milio48/fullstuck/main/store.json";
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $remote_json = @file_get_contents($remote_store_url, false, $ctx);
+        
+        if (!$remote_json) {
+            fst_flash_set('error_message', 'Cannot connect to Plugin Store for validation.');
             fst_redirect($admin_base . '/plugins');
         }
 
-        // Keamanan: Hanya izinkan download via HTTPS dari domain tepercaya
-        if (!preg_match('/^https:\/\//', $url)) {
-            fst_flash_set('error_message', 'Plugin URL must use HTTPS.');
+        $store_plugins = json_decode($remote_json, true) ?: [];
+        $verified_url = null;
+        
+        foreach ($store_plugins as $plugin) {
+            if (($plugin['id'] ?? '') === $id) {
+                $verified_url = $plugin['url'] ?? null;
+                break;
+            }
+        }
+
+        if (!$verified_url) {
+            fst_flash_set('error_message', 'Plugin ID is not registered in the official store.');
             fst_redirect($admin_base . '/plugins');
         }
+
+        // 2. Keamanan: Pastikan URL menggunakan HTTPS dan domain tepercaya
+        if (!preg_match('/^https:\/\//', $verified_url)) {
+            fst_flash_set('error_message', 'Invalid Plugin Registry: URL must use HTTPS.');
+            fst_redirect($admin_base . '/plugins');
+        }
+        
         $allowed_hosts = ['raw.githubusercontent.com', 'github.com', 'gist.githubusercontent.com'];
-        $url_host = parse_url($url, PHP_URL_HOST);
+        $url_host = parse_url($verified_url, PHP_URL_HOST);
         if (!$url_host || !in_array(strtolower($url_host), $allowed_hosts)) {
             fst_flash_set('error_message', 'Plugin download is only allowed from trusted sources (GitHub).');
             fst_redirect($admin_base . '/plugins');
         }
+
+        $url = $verified_url; // Gunakan URL yang sudah terverifikasi dari registry
 
         // Pastikan direktori plugin ada
         $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
