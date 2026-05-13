@@ -276,6 +276,11 @@ function fst_run() {
             $title_tag = $matches[0];
         }
 
+        // [PATCH] Ambil atribut dari tag <body> asli dan kirim via Header
+        if ($target === 'body' && preg_match('/<body([^>]*)>/is', $output, $matches)) {
+            header('X-FST-Body-Attrs: ' . trim($matches[1]));
+        }
+
         // 2. Potong HTML sesuai target (biasanya 'body')
         $output = fst_extract_html_fragment($output, $target); 
 

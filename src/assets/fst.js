@@ -17,6 +17,8 @@ document.addEventListener('click', async function(e) {
     try {
         const headers = { [reqHeader]: 'true', [targetHeader]: targetSelector };
         const response = await fetch(link.href, { headers });
+        const redirectUrl = response.headers.get('X-FST-Redirect');
+        if (redirectUrl) { window.location.href = redirectUrl; return; }
         if (!response.ok) { window.location.href = link.href; return; }
 
         const contentType = response.headers.get('content-type');
@@ -28,6 +30,15 @@ document.addEventListener('click', async function(e) {
         const html = await response.text();
         const newTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
         if (newTitle) document.title = newTitle[1];
+        
+        const bodyAttrs = response.headers.get('X-FST-Body-Attrs');
+        if (bodyAttrs !== null && targetSelector === 'body') {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = `<div ${bodyAttrs}></div>`;
+            const newBody = tmp.firstChild;
+            Array.from(document.body.attributes).forEach(attr => document.body.removeAttribute(attr.name));
+            Array.from(newBody.attributes).forEach(attr => document.body.setAttribute(attr.name, attr.value));
+        }
 
         if (!targetElement) throw new Error('Target not found');
 
@@ -39,7 +50,7 @@ document.addEventListener('click', async function(e) {
 
         /* Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector } */
         if (!isHistoryOptOut) {
-            window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, '', link.href);
+            window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, '', link.href);
         }
 
         /* Eksekusi ulang tag <script> (skip fst-spa-agent dan data-spa-ignore) */
@@ -70,6 +81,13 @@ window.addEventListener('popstate', function(e) {
             /* 1. Dispatch fst:unload */
             document.dispatchEvent(new Event('fst:unload'));
             /* 2. Isi innerHTML dengan e.state.fstHtml */
+            if (e.state.fstBodyAttrs && e.state.fstTarget === 'body') {
+                const tmp = document.createElement('div');
+                tmp.innerHTML = `<div ${e.state.fstBodyAttrs}></div>`;
+                const newBody = tmp.firstChild;
+                Array.from(document.body.attributes).forEach(attr => document.body.removeAttribute(attr.name));
+                Array.from(newBody.attributes).forEach(attr => document.body.setAttribute(attr.name, attr.value));
+            }
             targetElement.innerHTML = e.state.fstHtml;
             /* 3. Eksekusi ulang script (skip fst-spa-agent dan data-spa-ignore) */
             const scripts = targetElement.querySelectorAll('script');
@@ -130,6 +148,8 @@ document.addEventListener('submit', async function(e) {
         }
         
         const response = await fetch(finalUrl, fetchOptions);
+        const redirectUrl = response.headers.get('X-FST-Redirect');
+        if (redirectUrl) { window.location.href = redirectUrl; return; }
         
         if (response.redirected) {
             window.location.href = response.url;
@@ -144,13 +164,22 @@ document.addEventListener('submit', async function(e) {
         const html = await response.text();
         const newTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
         if (newTitle) document.title = newTitle[1];
+        
+        const bodyAttrs = response.headers.get('X-FST-Body-Attrs');
+        if (bodyAttrs !== null && targetSelector === 'body') {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = `<div ${bodyAttrs}></div>`;
+            const newBody = tmp.firstChild;
+            Array.from(document.body.attributes).forEach(attr => document.body.removeAttribute(attr.name));
+            Array.from(newBody.attributes).forEach(attr => document.body.setAttribute(attr.name, attr.value));
+        }
         if (!targetElement) throw new Error('Target not found');
         
         document.dispatchEvent(new Event('fst:unload'));
         targetElement.innerHTML = html;
         
         if (!isHistoryOptOut && method === 'GET') {
-            window.history.pushState({ fstHtml: html, fstTarget: targetSelector }, '', finalUrl);
+            window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, '', finalUrl);
         }
         
         document.dispatchEvent(new Event('fst:load'));
