@@ -84,7 +84,12 @@ function fst_db($mode, $sql, $params = []) {
     if (strtoupper($mode) === 'EXEC') {
         return ['affected_rows' => $stmt->rowCount(),'last_id' => $isInsert ? $fst_pdo->lastInsertId() : null,'query_type' => strtok($normalizedSql, ' '),'success' => true];
     }
-    return match(strtoupper($mode)) { 'ROW' => $stmt->fetch(), 'SCALAR' => $stmt->fetchColumn(), 'ALL' => $stmt->fetchAll(), default => $stmt->fetchAll() };
+    return match(strtoupper($mode)) { 
+        'ROW' => $stmt->fetch(), 
+        'SCALAR', 'ONE' => $stmt->fetchColumn(), 
+        'ALL' => $stmt->fetchAll(), 
+        default => $stmt->fetchAll() 
+    };
 }
 
 function fst_db_select($table, $conditions = [], $options = []) {

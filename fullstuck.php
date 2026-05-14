@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 0061584ce3b9cc6a9eef5f584e8465ccededde8afa91897ee36e17e2cc7f4bfb
+ * 💡 Version: 0.1.0 | FST_HASH: a7e6c35d26bcdf6d10654cb4fcf198c1673d63e495cfb8961f43a9c7a1e08ca8
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -367,7 +367,12 @@ function fst_db($mode, $sql, $params = []) {
     if (strtoupper($mode) === 'EXEC') {
         return ['affected_rows' => $stmt->rowCount(),'last_id' => $isInsert ? $fst_pdo->lastInsertId() : null,'query_type' => strtok($normalizedSql, ' '),'success' => true];
     }
-    return match(strtoupper($mode)) { 'ROW' => $stmt->fetch(), 'SCALAR' => $stmt->fetchColumn(), 'ALL' => $stmt->fetchAll(), default => $stmt->fetchAll() };
+    return match(strtoupper($mode)) { 
+        'ROW' => $stmt->fetch(), 
+        'SCALAR', 'ONE' => $stmt->fetchColumn(), 
+        'ALL' => $stmt->fetchAll(), 
+        default => $stmt->fetchAll() 
+    };
 }
 
 function fst_db_select($table, $conditions = [], $options = []) {
