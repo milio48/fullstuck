@@ -184,19 +184,29 @@ function fst_is_dev() {
     return ($fst_config['environment'] ?? 'production') === 'development';
 }
 
+function _fst_interpolate_env($val) {
+    if (is_string($val) && strpos($val, '${') !== false) {
+        return preg_replace_callback('/\$\{([A-Za-z0-9_]+)\}/', fn($m) => getenv($m[1]) !== false ? getenv($m[1]) : '', $val);
+    }
+    if (is_array($val)) {
+        foreach ($val as $k => $v) $val[$k] = _fst_interpolate_env($v);
+    }
+    return $val;
+}
+
 function fst_config($key = null, $default = null) {
     $fst_config = fst_app('config');
-    if ($key === null) return $fst_config;
+    if ($key === null) return _fst_interpolate_env($fst_config);
     $keys = explode('.', $key);
     $val = $fst_config;
     foreach ($keys as $k) {
         if (is_array($val) && array_key_exists($k, $val)) {
             $val = $val[$k];
         } else {
-            return $default;
+            return _fst_interpolate_env($default);
         }
     }
-    return $val;
+    return _fst_interpolate_env($val);
 }
 
 function fst_is_spa(): bool {

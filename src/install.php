@@ -42,10 +42,18 @@ function fst_handle_installation() {
                     "allowed_ips" => [] // Kosong berarti diizinkan semua
                 ],
                 "database" => [
-                    "driver" => $driver,
-                    "mysql" => ["host" => $input_data['db_host'] ?? 'localhost', "dbname" => $input_data['db_name'] ?? '', "username" => $input_data['db_user'] ?? 'root', "password" => $input_data['db_pass'] ?? ''],
-                    "sqlite" => ["database_path" => $input_data['db_path'] ?? 'database.sqlite'],
-                    "pgsql" => ["host" => $input_data['db_host'] ?? 'localhost', "port" => $input_data['db_port'] ?? '5432', "dbname" => $input_data['db_name'] ?? '', "username" => $input_data['db_user'] ?? 'postgres', "password" => $input_data['db_pass'] ?? '']
+                    "default" => "main",
+                    "connections" => [
+                        "main" => [
+                            "driver" => $driver,
+                            "database_path" => $input_data['db_path'] ?? 'database.sqlite',
+                            "host" => $input_data['db_host'] ?? 'localhost',
+                            "port" => $input_data['db_port'] ?? ($driver === 'pgsql' ? '5432' : '3306'),
+                            "dbname" => $input_data['db_name'] ?? '',
+                            "username" => $input_data['db_user'] ?? ($driver === 'pgsql' ? 'postgres' : 'root'),
+                            "password" => $input_data['db_pass'] ?? ''
+                        ]
+                    ]
                 ],
                 "routing" => [
                     "base_path" => "/",
@@ -61,7 +69,6 @@ function fst_handle_installation() {
                     "header_target" => "X-FST-Target",
                     "indicator_class" => "fst-loading"
                 ]
-
             ];
             
             if (file_put_contents(FST_CONFIG_FILE, json_encode($config_data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) === false) throw new Exception("Failed to write `fullstuck.json`. Check folder permissions.");

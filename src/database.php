@@ -1,45 +1,9 @@
 <?php
-function _fst_connect_db() {
-    $fst_config = fst_app('config');
-    if ($fst_config) {
-        $db_all_config = $fst_config['database'] ?? null;
-        $driver = $db_all_config['driver'] ?? 'none';
 
-        if ($driver !== 'none' && $db_all_config) {
-            try {
-                $db_config = $db_all_config[$driver];
-                $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC, PDO::ATTR_EMULATE_PREPARES => false];
-
-                switch ($driver) {
-                    case 'mysql':
-                        $dsn = "mysql:host={$db_config['host']};dbname={$db_config['dbname']};charset=utf8mb4";
-                        $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
-                        break;
-                    case 'sqlite':
-                        $path = FST_ROOT_DIR . '/' . $db_config['database_path'];
-                        $dsn = "sqlite:" . $path;
-                        $fst_pdo = new PDO($dsn, null, null, $options);
-                        break;
-                    case 'pgsql':
-                        $port = $db_config['port'] ?? '5432';
-                        $dsn = "pgsql:host={$db_config['host']};port={$port};dbname={$db_config['dbname']}";
-                        $fst_pdo = new PDO($dsn, $db_config['username'], $db_config['password'], $options);
-                        break;
-                    default:
-                        throw new Exception("Unsupported database driver '{$driver}' in fullstuck.json.");
-                }
-                fst_app('pdo', $fst_pdo);
-            } catch (Exception $e) {
-                if (function_exists('fst_abort')) fst_abort(500, "Database Connection Failed: " . $e->getMessage());
-                else die("FATAL ERROR: Database Connection Failed: " . $e->getMessage());
-            }
-        }
-    }
-}
-
-function fst_db_quote_ident($name) {
-    $fst_config = fst_app('config');
-    $driver = $fst_config['database']['driver'] ?? 'sqlite';
+function fst_db_quote_ident($name, $connection = null) {
+    $conn_name = $connection ?? fst_config('database.default', 'main');
+    $db_config = fst_config("database.connections.{$conn_name}");
+    $driver = strtolower($db_config['driver'] ?? 'sqlite');
     $q = ($driver === 'pgsql') ? '"' : '`';
     
     // [PATCH] Dukungan table.column
@@ -54,36 +18,72 @@ function fst_db_quote_ident($name) {
 }
 
 // Sanitasi order_by agar aman dari SQL Injection
-function _fst_sanitize_order_by($order_by) {
+function _fst_sanitize_order_by($order_by, $connection = null) {
     $parts = array_map('trim', explode(',', $order_by));
     $safe_parts = [];
     foreach ($parts as $part) {
         // Format yang diizinkan: "column_name" atau "column_name ASC/DESC"
         if (preg_match('/^([a-zA-Z_][a-zA-Z0-9_.]*)(\s+(ASC|DESC))?$/i', $part, $m)) {
-            $safe_parts[] = fst_db_quote_ident($m[1]) . (isset($m[3]) ? ' ' . strtoupper($m[3]) : '');
+            $safe_parts[] = fst_db_quote_ident($m[1], $connection) . (isset($m[3]) ? ' ' . strtoupper($m[3]) : '');
         }
     }
     return !empty($safe_parts) ? implode(', ', $safe_parts) : null;
 }
 
-function fst_db($mode, $sql, $params = []) {
-    if (fst_app('pdo') === null) {
-        _fst_connect_db();
+function fst_db($mode, $sql, $params = [], $connection = null) {
+    global $fst_pdo_pool;
+    if (!isset($fst_pdo_pool)) $fst_pdo_pool = [];
+    
+    $conn_name = $connection ?? fst_config('database.default', 'main');
+    
+    if (!isset($fst_pdo_pool[$conn_name])) {
+        $db_config = fst_config("database.connections.{$conn_name}");
+        if (!$db_config) fst_abort(500, "Database connection '{$conn_name}' is not configured.");
+        
+        $driver = strtolower($db_config['driver'] ?? 'none');
+        if ($driver === 'none') fst_abort(500, "Database is disabled for connection '{$conn_name}'.");
+        
+        try {
+            $dsn = '';
+            if ($driver === 'sqlite') {
+                $path = $db_config['database_path'] ?? 'database.sqlite';
+                $dsn = 'sqlite:' . FST_ROOT_DIR . '/' . ltrim($path, '/');
+            } else if ($driver === 'mysql' || $driver === 'pgsql') {
+                $host = $db_config['host'] ?? '127.0.0.1';
+                $port = !empty($db_config['port']) ? ';port=' . $db_config['port'] : '';
+                $dbname = $db_config['dbname'] ?? '';
+                $dsn = "{$driver}:host={$host}{$port};dbname={$dbname}";
+            } else {
+                fst_abort(500, "Unsupported DB driver: {$driver}");
+            }
+            
+            $user = $db_config['username'] ?? null;
+            $pass = $db_config['password'] ?? null;
+            $fst_pdo_pool[$conn_name] = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false
+            ]);
+        } catch (PDOException $e) {
+            fst_abort(500, "Database Connection Failed [{$conn_name}]: " . (fst_is_safe_to_debug() ? $e->getMessage() : 'Error.'));
+        }
     }
     
-    $fst_pdo = fst_app('pdo');
-
-    if ($fst_pdo === null) {
-        fst_abort(500, "Database function fst_db() called, but no database is configured or connected. Check 'fullstuck.json'.");
-    }
-
-    $stmt = $fst_pdo->prepare($sql);
+    $pdo = $fst_pdo_pool[$conn_name];
+    $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $normalizedSql = strtoupper(trim($sql));
     $isInsert = strpos($normalizedSql, 'INSERT') === 0;
+    
     if (strtoupper($mode) === 'EXEC') {
-        return ['affected_rows' => $stmt->rowCount(),'last_id' => $isInsert ? $fst_pdo->lastInsertId() : null,'query_type' => strtok($normalizedSql, ' '),'success' => true];
+        return [
+            'affected_rows' => $stmt->rowCount(),
+            'last_id' => $isInsert ? $pdo->lastInsertId() : null,
+            'query_type' => strtok($normalizedSql, ' '),
+            'success' => true
+        ];
     }
+    
     return match(strtoupper($mode)) { 
         'ROW' => $stmt->fetch(), 
         'SCALAR', 'ONE' => $stmt->fetchColumn(), 
@@ -93,46 +93,49 @@ function fst_db($mode, $sql, $params = []) {
 }
 
 function fst_db_select($table, $conditions = [], $options = []) {
+    $conn = $options['connection'] ?? null;
     $columns = $options['select'] ?? '*';
-    $t = fst_db_quote_ident($table);
+    $t = fst_db_quote_ident($table, $conn);
     $sql = "SELECT {$columns} FROM {$t}";
     $params = [];
     if (!empty($conditions)) {
         $where = [];
         foreach ($conditions as $k => $v) {
-            $where[] = fst_db_quote_ident($k) . " = ?";
+            $where[] = fst_db_quote_ident($k, $conn) . " = ?";
             $params[] = $v;
         }
         $sql .= " WHERE " . implode(" AND ", $where);
     }
     if (isset($options['order_by'])) {
-        $safe_order = _fst_sanitize_order_by($options['order_by']);
+        $safe_order = _fst_sanitize_order_by($options['order_by'], $conn);
         if ($safe_order) $sql .= " ORDER BY " . $safe_order;
     }
     if (isset($options['limit'])) $sql .= " LIMIT " . (int)$options['limit'];
     if (isset($options['offset'])) $sql .= " OFFSET " . (int)$options['offset'];
     
     $mode = $options['mode'] ?? 'ALL';
-    return fst_db($mode, $sql, $params);
+    return fst_db($mode, $sql, $params, $conn);
 }
 
-function fst_db_insert($table, $data) {
+function fst_db_insert($table, $data, $options = []) {
     if (empty($data)) return false;
-    $t = fst_db_quote_ident($table);
-    $columns = array_map('fst_db_quote_ident', array_keys($data));
+    $conn = $options['connection'] ?? null;
+    $t = fst_db_quote_ident($table, $conn);
+    $columns = array_map(fn($k) => fst_db_quote_ident($k, $conn), array_keys($data));
     $placeholders = array_fill(0, count($data), '?');
     $sql = "INSERT INTO {$t} (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
-    return fst_db('EXEC', $sql, array_values($data));
+    return fst_db('EXEC', $sql, array_values($data), $conn);
 }
 
-function fst_db_update($table, $data, $conditions = []) {
-    if (empty($conditions)) return false; // [PATCH] Mencegah mass-update
+function fst_db_update($table, $data, $conditions = [], $options = []) {
+    if (empty($conditions)) return false; 
     if (empty($data)) return false;
-    $t = fst_db_quote_ident($table);
+    $conn = $options['connection'] ?? null;
+    $t = fst_db_quote_ident($table, $conn);
     $set = [];
     $params = [];
     foreach ($data as $k => $v) {
-        $set[] = fst_db_quote_ident($k) . " = ?";
+        $set[] = fst_db_quote_ident($k, $conn) . " = ?";
         $params[] = $v;
     }
     $sql = "UPDATE {$t} SET " . implode(", ", $set);
@@ -140,34 +143,37 @@ function fst_db_update($table, $data, $conditions = []) {
     if (!empty($conditions)) {
         $where = [];
         foreach ($conditions as $k => $v) {
-            $where[] = fst_db_quote_ident($k) . " = ?";
+            $where[] = fst_db_quote_ident($k, $conn) . " = ?";
             $params[] = $v;
         }
         $sql .= " WHERE " . implode(" AND ", $where);
     }
-    return fst_db('EXEC', $sql, $params);
+    return fst_db('EXEC', $sql, $params, $conn);
 }
 
-function fst_db_delete($table, $conditions) {
+function fst_db_delete($table, $conditions, $options = []) {
     if (empty($conditions)) return false; 
-    $t = fst_db_quote_ident($table);
+    $conn = $options['connection'] ?? null;
+    $t = fst_db_quote_ident($table, $conn);
     $where = [];
     $params = [];
     foreach ($conditions as $k => $v) {
-        $where[] = fst_db_quote_ident($k) . " = ?";
+        $where[] = fst_db_quote_ident($k, $conn) . " = ?";
         $params[] = $v;
     }
     $sql = "DELETE FROM {$t} WHERE " . implode(" AND ", $where);
-    return fst_db('EXEC', $sql, $params);
+    return fst_db('EXEC', $sql, $params, $conn);
 }
+
 function fst_db_row($table, $conditions = [], $options = []) {
     $options['limit'] = 1;
     $options['mode'] = 'ROW';
     return fst_db_select($table, $conditions, $options);
 }
 
-function fst_db_exists($table, $conditions = []) {
-    $row = fst_db_row($table, $conditions, ['select' => '1']);
+function fst_db_exists($table, $conditions = [], $options = []) {
+    $options['select'] = '1';
+    $row = fst_db_row($table, $conditions, $options);
     return !empty($row);
 }
 ?>
