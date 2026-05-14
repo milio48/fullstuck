@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: bb4987f832df32c87cec3a28e14e5bed7b215760352a6dd234b4d4fd2faf72b1
+ * 💡 Version: 0.1.0 | FST_HASH: e00757e66bf5007424c1c63fe0805496ac5f9af4f9495a05ee04570a89cb42e8
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -1118,8 +1118,14 @@ function fst_handle_installation() {
             $server_type = $input_data['server_type'] ?? 'apache_litespeed';
             
             if ($driver !== 'none') {
-                if ($driver === 'mysql') { $dsn = "mysql:host={$input_data['db_host']};dbname={$input_data['db_name']};charset=utf8mb4"; new PDO($dsn, $input_data['db_user'], $input_data['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
-                elseif ($driver === 'pgsql') { $port = $input_data['db_port'] ?: '5432'; $dsn = "pgsql:host={$input_data['db_host']};port={$port};dbname={$input_data['db_name']}"; new PDO($dsn, $input_data['db_user'], $input_data['db_pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
+                $h = $input_data['db_host'] ?? 'localhost';
+                $n = $input_data['db_name'] ?? '';
+                $u = $input_data['db_user'] ?? ($driver === 'pgsql' ? 'postgres' : 'root');
+                $p = $input_data['db_pass'] ?? '';
+                $port = $input_data['db_port'] ?? ($driver === 'pgsql' ? '5432' : '3306');
+
+                if ($driver === 'mysql') { $dsn = "mysql:host={$h};port={$port};dbname={$n};charset=utf8mb4"; new PDO($dsn, $u, $p, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
+                elseif ($driver === 'pgsql') { $dsn = "pgsql:host={$h};port={$port};dbname={$n}"; new PDO($dsn, $u, $p, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, PDO::ATTR_TIMEOUT => 3]); }
                 else { $path = FST_ROOT_DIR . '/' . ($input_data['db_path'] ?? 'database.sqlite'); $dir = dirname($path); if (!is_dir($dir) && !mkdir($dir, 0755, true)) throw new Exception("Failed to create folder '{$dir}'. Check permissions."); new PDO("sqlite:" . $path, null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); }
             }
             
