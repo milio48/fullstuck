@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: e00757e66bf5007424c1c63fe0805496ac5f9af4f9495a05ee04570a89cb42e8
+ * 💡 Version: 0.1.0 | FST_HASH: 41be54b9207b775986c071b5dd2721417dfcadbfc35f2a2c898a15265a1de716
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -1152,6 +1152,7 @@ function fst_handle_installation() {
                 ],
                 "routing" => [
                     "base_path" => "/",
+                    "require" => [],
                     "public_folders" => ["assets", "uploads", "storage/public"],
                     "routes_file" => ["router.php"],
                     "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
@@ -2258,6 +2259,29 @@ $plugin_dir = FST_ROOT_DIR . '/fst-plugins';
 if (is_dir($plugin_dir)) {
     foreach (glob($plugin_dir . '/fst-*.php') as $plugin) {
         require_once $plugin;
+    }
+}
+
+
+$require_items = $fst_config['routing']['require'] ?? [];
+foreach ($require_items as $item) {
+    $raw_path = FST_ROOT_DIR . '/' . ltrim($item, '/');
+    
+    
+    if (is_dir($raw_path)) {
+        $raw_path = rtrim($raw_path, '/\\') . DIRECTORY_SEPARATOR . '*.php';
+    }
+    
+    
+    $matched_files = glob($raw_path);
+    if ($matched_files) {
+        foreach ($matched_files as $file) {
+            $real_path = realpath($file);
+            
+            if ($real_path && str_starts_with($real_path, realpath(FST_ROOT_DIR)) && is_file($real_path) && str_ends_with($real_path, '.php')) {
+                require_once $real_path;
+            }
+        }
     }
 }
 

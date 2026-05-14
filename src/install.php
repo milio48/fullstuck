@@ -63,6 +63,7 @@ function fst_handle_installation() {
                 ],
                 "routing" => [
                     "base_path" => "/",
+                    "require" => [],
                     "public_folders" => ["assets", "uploads", "storage/public"],
                     "routes_file" => ["router.php"],
                     "error_handlers" => ["404" => "views/errors/404.php", "403" => "Sorry, you do not have permission.", "405" => "Method not allowed.", "500" => "views/errors/500.php"]
