@@ -1,3 +1,11 @@
 /ignored
 fullstuck.json
 test-project/ignored_*
+# File hasil generate instalasi (Testing lokal)
+.htaccess
+.fst-error.log
+*.sqlite
+router.php
+/views/
+/assets/
+/fst-plugins/
