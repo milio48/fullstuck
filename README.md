@@ -70,11 +70,11 @@ Jika Anda menggunakan *AI coding assistant*, cukup salin *prompt* di bawah ini u
 
 ## 📚 Dokumentasi
 
-Dokumentasi FullStuck dirancang untuk memberikan konteks penuh bagi pengembang dan AI:
+Dokumentasi FullStuck bersifat **versioned single-file** agar memudahkan pencarian dan memberikan konteks penuh bagi AI:
 
-*   📖 **[Panduan Pengguna v0.1.0](docs/v0.1.0.md)** - Referensi API dan fitur terbaru.
-*   🏗️ **[Arsitektur Framework](docs/ARCHITECTURE.md)** - Cara kerja internal dan filosofi desain.
-*   🎨 **[Landing Page](https://milio48.github.io/fullstuck/)** - Demo dan visualisasi fitur.
+- 📖 **[Dokumentasi v0.1.0 (Terbaru)](docs/v0.1.0.md)**
+- 🏗️ **[Arsitektur Framework](docs/ARCHITECTURE.md)**
+- 🔌 **[Panduan Pembuatan Plugin](docs/PLUGIN_DEVELOPMENT.md)**
 
 ---
 
