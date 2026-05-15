@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Build**: Improved `fst.js` minification in compiler to strip comments (// and /* */) properly.
 - **Fix**: Optional route parameter parsing order in `src/router.php`.
 - **Admin**: Fixed false-positive database connection failure in System Monitor due to lazy-loading connection state.
+- **Admin**: Fixed installed plugin filenames to use `fst-` prefix, ensuring they are correctly discovered by the framework.
 
 ### Security (Code Review Hardening)
 - **Database**: Fixed **SQL Injection** vulnerability in `fst_db_select()` `order_by` option — user input is now sanitized via `_fst_sanitize_order_by()` with whitelist regex.
