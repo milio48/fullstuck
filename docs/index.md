@@ -8,7 +8,7 @@ FullStuck.php menggabungkan kesederhanaan PHP klasik dengan kenyamanan pengemban
 
 ## 💡 Filosofi Utama
 
-### 📦 Distrbusi Satu File
+### 📦 Distribusi Satu File
 Lupakan folder `vendor/` yang berat atau konfigurasi server yang rumit. FullStuck membungkus routing, database, view, dan auth ke dalam satu file `fullstuck.php`.
 
 ### ⚡ Zero-Config SPA
@@ -42,15 +42,15 @@ Silakan pilih versi dokumentasi yang sesuai dengan proyek Anda:
 
 | Versi | Status | Link Dokumentasi |
 |---|---|---|
-| **v0.1.0** | **Stable (Recommended)** | 📖 **[Lihat Dokumentasi v0.1.0](v0.1.0.md)** |
-| **v0.0.0** | Experimental | 📖 [Lihat Dokumentasi v0.0.0](v0.0.0.md) |
+| **v0.1.0** | **Stable (Latest)** | 📖 **[Lihat Dokumentasi v0.1.0](v0.1.0.md)** |
 
 ---
 
 ## 🏗️ Referensi Lainnya
 
-- **[Arsitektur Framework](ARCHITECTURE.md)**: Memahami konsep modularitas dan proses kompilasi.
-- **[Panduan Kontribusi](../CONTRIBUTING.md)**: Cara membantu pengembangan FullStuck.
+- 🏗️ **[Arsitektur Framework](ARCHITECTURE.md)**: Memahami konsep modularitas dan proses kompilasi.
+- 🔌 **[Panduan Pembuatan Plugin](PLUGIN_DEVELOPMENT.md)**: Cara memperluas framework dengan plugin.
+- 🤝 **[Panduan Kontribusi](../CONTRIBUTING.md)**: Cara membantu pengembangan core FullStuck.
 
 ---
 [Kembali ke GitHub Repository](https://github.com/milio48/fullstuck)
