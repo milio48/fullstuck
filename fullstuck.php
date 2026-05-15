@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 41be54b9207b775986c071b5dd2721417dfcadbfc35f2a2c898a15265a1de716
+ * 💡 Version: 0.1.0 | FST_HASH: 61e76cc5b3b50b9bfc1fe55974cda6a9777677ed1e17826d7851c1786b79b35c
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -2226,7 +2226,7 @@ HTML;
         if ($content === false || strpos(trim($content), '<?php') !== 0) {
             fst_flash_set('error_message', 'Invalid plugin file or failed to download from GitHub.');
         } else {
-            $filename = $plugin_dir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $id) . '.php';
+            $filename = $plugin_dir . '/fst-' . $clean_id . '.php';
             if (file_put_contents($filename, $content) !== false) {
                 fst_flash_set('success_message', 'Plugin ' . htmlspecialchars($id) . ' installed successfully!');
             } else {

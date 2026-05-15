@@ -915,7 +915,7 @@ HTML;
         if ($content === false || strpos(trim($content), '<?php') !== 0) {
             fst_flash_set('error_message', 'Invalid plugin file or failed to download from GitHub.');
         } else {
-            $filename = $plugin_dir . '/' . preg_replace('/[^a-zA-Z0-9_-]/', '', $id) . '.php';
+            $filename = $plugin_dir . '/fst-' . $clean_id . '.php';
             if (file_put_contents($filename, $content) !== false) {
                 fst_flash_set('success_message', 'Plugin ' . htmlspecialchars($id) . ' installed successfully!');
             } else {
