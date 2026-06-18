@@ -38,13 +38,34 @@ function render_template(string $templatePath, array $data, array $rules, string
             return "@@__FST_MARKER_{$markerCount}__@@";
         };
 
+        $css2xpath = function(string $selector): string {
+            if (str_starts_with(trim($selector), '//') || str_starts_with(trim($selector), './/')) {
+                return $selector;
+            }
+            $paths = [];
+            foreach (explode(',', $selector) as $sel) {
+                $sel = trim($sel);
+                $sel = preg_replace('/\s*>\s*/', '/', $sel);
+                $sel = preg_replace('/\s+/', '//', $sel);
+                $sel = preg_replace('/#([\w\-]+)/', '[@id="$1"]', $sel);
+                $sel = preg_replace('/\.([\w\-]+)/', '[contains(concat(" ", normalize-space(@class), " "), " $1 ")]', $sel);
+                $sel = preg_replace('/(^|\/|\|)(\[)/', '$1*$2', $sel);
+                if (!str_starts_with($sel, '/') && !str_starts_with($sel, '.')) {
+                    $sel = './/' . $sel;
+                }
+                $paths[] = $sel;
+            }
+            return implode(' | ', $paths);
+        };
+
         // Fungsi rekursif untuk mengurai rules array (text, attribute, loops)
-        $applyRules = function(array $currentRules, ?DOMNode $context = null) use (&$applyRules, $xpath, &$replacements, $getMarker, $dom) {
+        $applyRules = function(array $currentRules, ?DOMNode $context = null) use (&$applyRules, $xpath, &$replacements, $getMarker, $dom, $css2xpath) {
             
             // 1. Aturan Teks
             if (isset($currentRules['texts'])) {
                 foreach ($currentRules['texts'] as $selector => $phpVar) {
-                    $nodes = $context ? $xpath->query($selector, $context) : $xpath->query($selector);
+                    $xpathSel = $css2xpath($selector);
+                    $nodes = $context ? $xpath->query($xpathSel, $context) : $xpath->query($xpathSel);
                     if ($nodes !== false) {
                         foreach ($nodes as $node) {
                             $marker = $getMarker();
@@ -58,7 +79,8 @@ function render_template(string $templatePath, array $data, array $rules, string
             // 2. Aturan Atribut
             if (isset($currentRules['attributes'])) {
                 foreach ($currentRules['attributes'] as $selector => $attrs) {
-                    $nodes = $context ? $xpath->query($selector, $context) : $xpath->query($selector);
+                    $xpathSel = $css2xpath($selector);
+                    $nodes = $context ? $xpath->query($xpathSel, $context) : $xpath->query($xpathSel);
                     if ($nodes !== false) {
                         foreach ($nodes as $node) {
                             if ($node instanceof DOMElement) {
@@ -76,10 +98,11 @@ function render_template(string $templatePath, array $data, array $rules, string
             // 3. Aturan Looping
             if (isset($currentRules['loops'])) {
                 foreach ($currentRules['loops'] as $containerSel => $loopConfig) {
-                    $containers = $context ? $xpath->query($containerSel, $context) : $xpath->query($containerSel);
+                    $xpathSel = $css2xpath($containerSel);
+                    $containers = $context ? $xpath->query($xpathSel, $context) : $xpath->query($xpathSel);
                     if ($containers !== false) {
                         foreach ($containers as $container) {
-                            $itemSel = $loopConfig['item'];
+                            $itemSel = $css2xpath($loopConfig['item']);
                             $items = $xpath->query($itemSel, $container);
                             
                             if ($items !== false && $items->length > 0) {

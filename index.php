@@ -18,27 +18,30 @@ $data = [
     ]
 ];
 
-// Aturan/Ruleset penyuntikkan ke DOM (Berbasis Deklaratif Array murni)
+// Aturan/Ruleset penyuntikkan ke DOM (Berbasis CSS Selector & Deklaratif murni)
 $rules = [
     'texts' => [
-        "//title" => '$pageTitle'
+        "title" => '$pageTitle'
     ],
     'loops' => [
-        "//div[@id='blog-container']" => [
-            'item'  => ".//article[contains(@class, 'post-item')]",
+        "#blog-container" => [
+            'item'  => "article.post-item",
             'array' => '$blogs',
             'alias' => '$blog',
             
-            // Nested Rules: Diaplikasikan untuk setiap item loop secara spesifik
+            // Teks dinamis pada masing-masing item
             'texts' => [
-                ".//h2" => '$blog["title"]',
-                ".//p"  => '$blog["summary"]'
+                "h2" => '$blog["title"]',
+                "p"  => '$blog["summary"]'
             ],
             
-            // Opsional: Demonstrasi fitur merubah atribut
-            /* 'attributes' => [
-                ".//a" => ["href" => '$blog["url"]']
-            ] */
+            // Atribut dinamis
+            'attributes' => [
+                "a.read-more" => [
+                    "href" => '$blog["url"]',
+                    "title" => '$blog["title"]'
+                ]
+            ]
         ]
     ]
 ];
