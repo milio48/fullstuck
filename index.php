@@ -18,24 +18,23 @@ $data = [
     ]
 ];
 
-// Aturan/Ruleset penyuntikkan ke DOM (Berbasis CSS-styled Declarative)
+// Aturan/Ruleset penyuntikkan ke DOM (Berbasis DSL)
 $rules = [
-    // Teks langsung (shorthand)
+    // Teks langsung (CSS Selector -> String)
     "title" => '$pageTitle',
     
-    // Looping & Nested Selector (Selector sebagai key utama)
-    "#blog-container" => [
-        // 'loop' key bertugas mendeklarasikan array looping: [arrayVar, aliasVar, itemSelector]
-        "loop" => ['$blogs', '$blog', 'article.post-item'],
+    // Looping menggunakan directive '@foreach' di dalam scope block (CSS Selector -> Array)
+    "article.post-item" => [
+        "@foreach" => '$blogs as $blog',
         
-        // Nested selectors (Relatif terhadap 'article.post-item' karena berada di dalam loop)
+        // CSS Selector (Child scope) -> String
         "h2" => '$blog["title"]',
         "p"  => '$blog["summary"]',
         
         "a.read-more" => [
-            // Jika diawali dengan '@', maka ia akan mengatur atribut
-            "@href"  => '$blog["url"]',
-            "@title" => '$blog["title"]'
+            // Attribute scope (dibungkus `[...]`)
+            "[href]" => '$blog["url"]',
+            "[title]" => '$blog["title"]'
         ]
     ]
 ];
