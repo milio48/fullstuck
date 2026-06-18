@@ -1,0 +1,139 @@
+# Fullstuck DOM Templating Engine
+
+Sebuah mesin templating DOM ultra-minimalis, prosedural, dan tanpa dependensi tambahan (100% Vanilla PHP 8) untuk merender HTML statis menjadi dinamis. Engine ini memisahkan logika backend dan tampilan frontend secara mutlak tanpa menggunakan tag spesial bawaan (`{{ }}`) di sisi HTML.
+
+## ⚙️ Behaviour & Cara Kerja
+
+Mesin ini menggunakan arsitektur **JIT (Just-In-Time) Caching** yang berfokus pada kecepatan dan keamanan:
+1. **Pemeriksaan Cache**: Saat `render_template()` dipanggil, sistem akan mengecek keberadaan file `.php` hasil kompilasi di folder `build-template/`. 
+2. **Validasi Waktu**: Jika file cache sudah ada, sistem membandingkan `filemtime` (waktu modifikasi) file sumber `.html` dengan file cache. Kompilasi ulang (rebuild) **hanya** terjadi apabila file HTML lebih baru dari modifikasi cache terakhir.
+3. **Parsing DOM Cerdas**: HTML di-load secara aman via native `DOMDocument` dengan *fallback* standar UTF-8 (`<?xml encoding="utf-8" ?>`).
+4. **Manipulasi Marker**: Berdasarkan instruksi dari *Ruleset DSL*, compiler tidak merusak struktur DOM aslinya secara gegabah. Alih-alih mengeksekusi PHP secara langsung, script akan meletakkan *marker unik* (misal: `@@__FST_MARKER_1__@@`), men-dump struktur DOM final menjadi format string teks (via `saveHTML()`), lalu menukar semua *marker* tersebut dengan skrip asli PHP seperti `<?= htmlspecialchars(...) ?>`. Hal ini menjamin file yang dihasilkan tidak memicu *parser error* ketika ada tag aneh yang di-inject.
+5. **Konverter CSS Ketat (Strict CSS2XPath)**: Secara *native*, engine mengonversi sintaks CSS (id, class, child, sibling, attribute) ke dalam ekuivalensi `XPath`. Untuk menjaga sistem tidak error dari regex yang berat, sistem dilengkapi algoritma *whitelist* CSS. Pseudo-class seperti (`:hover`, `:nth-child()`) dan sibling complex selectors secara aman akan dihapus/diterjemahkan sebagai *XPath* buntu (blacklist).
+
+---
+
+## 🚀 Cara Penggunaan
+
+Panggil `render_template()` dengan mencantumkan path dokumen HTML sumber, susunan *data dinamis*, dan *ruleset* pemetaannya.
+
+### 1. Struktur File HTML (`blog-list.html`)
+HTML Anda harus bersih, 100% statis tanpa sisipan tag PHP apa pun.
+
+```html
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Judul Placeholder</title>
+</head>
+<body>
+    <div id="blog-container">
+        <!-- Item di bawah ini akan bertindak sebagai template iterasi -->
+        <article class="post-item">
+            <h2>Judul Sementara</h2>
+            <p>Ringkasan Sementara</p>
+            <a href="#" title="placeholder">Baca selengkapnya</a>
+        </article>
+        
+        <!-- Item dummy di bawah ini otomatis akan di-hapus dan dibersihkan oleh @foreach -->
+        <article class="post-item">
+            <h2>Judul 2</h2>
+            <p>Ringkasan 2</p>
+            <a href="#">Baca</a>
+        </article>
+    </div>
+</body>
+</html>
+```
+
+### 2. Implementasi Backend (`index.php`)
+
+```php
+<?php
+require 'compiler.php';
+
+// 1. Siapkan Data yang akan dirender (Bisa bersumber dari pemanggilan DB)
+$data = [
+    'pageTitle' => 'Eksperimen DOM Templating Deklaratif',
+    'blogs' => [
+        [
+            'title' => 'Vibe Coding', 
+            'summary' => 'Sangat menyenangkan...',
+            'url' => 'https://example.com/vibe'
+        ]
+    ]
+];
+
+// 2. Tentukan Aturan Injeksi CSS (DSL)
+$rules = [
+    "title" => '$pageTitle',
+    "article.post-item" => [
+        "@foreach" => '$blogs as $blog',
+        "h2" => '$blog["title"]',
+        "p"  => '$blog["summary"]',
+        "a"  => [
+            "[href]"  => '$blog["url"]',
+            "[title]" => '$blog["title"]'
+        ]
+    ]
+];
+
+// 3. Render
+render_template(__DIR__ . '/blog-list.html', $data, $rules);
+```
+
+---
+
+## 📐 Ruleset Syntax (DSL)
+
+API engine ini menggunakan konsep **Declarative Nested Scope**, di mana Anda memetakan elemen parent sebagai _kunci_ (key), dan daftar instruksinya di dalam parameter sub-array.
+
+Sintaks yang didukung adalah sebagai berikut:
+
+### 1. Text Injection (Shorthand)
+Digunakan untuk menimpa konten teks (_inner text_) dari elemen yang dipilih. Nilai dari instruksinya harus berupa **String** yang merepresentasikan pemanggilan variabel/array di PHP.
+Semua string akan otomatis dilindungi menggunakan mekanisme XSS Escape (`htmlspecialchars(..., ENT_QUOTES)`).
+
+```php
+"h1.title" => '$titleVar'
+```
+
+### 2. Attribute Directive `[attr]`
+Berfungsi untuk memanipulasi atribut HTML pada blok lingkup/elemen yang sedang aktif. Penulisan wajib dibungkus menggunakan tanda kurung siku `[...]`.
+```php
+"img.thumbnail" => [
+    "[src]" => '$imageSource',
+    "[alt]" => '$imageDescription'
+]
+```
+
+### 3. Logic Directive `@foreach`
+Digunakan untuk mereplikasi/me-loop elemen HTML ke dalam format iterasi. Aturan ini selalu dieksekusi **di dalam ruang scope parent**.
+- Compiler otomatis akan mencuplik elemen HTML berselector sama yang berada di urutan *pertama* di DOM sebagai "Cetakan".
+- Elemen pertama akan dibungkus oleh blok perintah tag pembuka penutup *foreach*.
+- Segala elemen duplikat tambahan (dummy nodes) di HTML berselector sama otomatis disapu bersih.
+```php
+"ul.nav > li" => [
+    "@foreach" => '$menus as $menu',
+    "a" => [
+        "[href]" => '$menu["link"]',
+        "text"   => '$menu["label"]' // Jika mengkombinasikan atribut dan text di scope yang sama
+    ]
+]
+```
+*(Catatan: Anda dapat menggunakan properti khusus bernama `text` untuk mengganti inner text apabila elemen tersebut juga memiliki atribut array directive yang disetel secara bersamaan).*
+
+### 4. Recursive/Nested Selectors
+Anda bisa menelusuri elemen yang lebih menjorok ke dalam (children) menggunakan standar penulisan Selector CSS biasa di sub-array. Selector yang bersarang (nested) jangkauan XPath pencariannya akan dilakukan sebatas pada internal elemen pembungkus (relatif) saja. Ini membuat parsing 10x lipat lebih akurat dan minim bentrokan di memori global.
+```php
+"#profile" => [
+    ".avatar" => [
+        "[src]" => '$user["avatar"]'
+    ],
+    ".details" => [
+        "h3" => '$user["name"]',
+        "p.bio" => '$user["bio"]'
+    ]
+]
+```
