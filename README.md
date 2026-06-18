@@ -128,11 +128,11 @@ Digunakan untuk mereplikasi/me-loop elemen HTML ke dalam format iterasi. Aturan 
     "@foreach" => '$menus as $menu',
     "a" => [
         "[href]" => '$menu["link"]',
-        "text"   => '$menu["label"]' // Jika mengkombinasikan atribut dan text di scope yang sama
+        "@text"  => '$menu["label"]' // Kombinasi modifier teks dan atribut
     ]
 ]
 ```
-*(Catatan: Anda dapat menggunakan properti khusus bernama `text` untuk mengganti inner text apabila elemen tersebut juga memiliki atribut array directive yang disetel secara bersamaan).*
+*(Catatan: Aturan `@text` ini menggantikan peran string shorthand jika elemen tersebut membutuhkan atribut directive di saat yang bersamaan).*
 
 ### 4. Logic Directive `@html`
 Digunakan khusus untuk merender tag HTML mentah (Raw HTML) secara langsung dari string ke dalam DOM tanpa dilakukan proses *escaping* XSS. Fitur ini sangat berguna untuk menampilkan hasil output dari *WYSIWYG Editor*.

@@ -113,6 +113,16 @@ function render_template(string $templatePath, array $data, array $rules, string
                 // 4. Nested Rules & Logic Directives (Jika value berupa ARRAY)
                 elseif (is_array($value)) {
                     
+                    if (isset($value['@text'])) {
+                        // Logic Directive: @text (Safe Text with XSS protection)
+                        foreach ($nodes as $node) {
+                            $marker = $getMarker();
+                            $node->nodeValue = $marker;
+                            $replacements[$marker] = "<?= htmlspecialchars({$value['@text']} ?? '', ENT_QUOTES, 'UTF-8') ?>";
+                        }
+                        unset($value['@text']);
+                    }
+
                     if (isset($value['@html'])) {
                         // Logic Directive: @html (Raw HTML bypass XSS)
                         foreach ($nodes as $node) {
