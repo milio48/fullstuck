@@ -78,6 +78,14 @@ $rules = [
     "span.content" => ["@html" => '$htmlContent'],
     // JS Murni: document.querySelectorAll("span.content").forEach(el => el.innerHTML = htmlContent);
 
+    // Menyisipkan HTML di akhir elemen (Append)
+    "head" => ["@append" => '"<style>body { background: red; }</style>"'],
+    // JS Murni: document.querySelectorAll("head").forEach(el => el.insertAdjacentHTML("beforeend", "<style>body { background: red; }</style>"));
+
+    // Menyisipkan HTML di awal elemen (Prepend)
+    "div.container" => ["@prepend" => '"<div class=\"alert\">Warning</div>"'],
+    // JS Murni: document.querySelectorAll("div.container").forEach(el => el.insertAdjacentHTML("afterbegin", "<div class=\"alert\">Warning</div>"));
+
 
     // ==========================================
     // 2. MANIPULASI ATRIBUT
@@ -289,7 +297,21 @@ Fitur ini juga sangat kuat untuk kebutuhan injeksi (Hotfix) statis, seperti meny
 ];
 ```
 
-### 5. Recursive/Nested Selectors
+### 5. Logic Directive `@append` & `@prepend`
+Jika `@html` akan memusnahkan seluruh konten yang ada di dalam node HTML, direktif `@append` dan `@prepend` hadir sebagai solusi injeksi non-destruktif (persis seperti `insertAdjacentHTML` di JavaScript). Sangat vital untuk menyuntikkan `<style>` dan `<script>` secara dinamis tanpa merusak susunan DOM anak yang sudah ada.
+
+```php
+"head" => [
+    // Menyisipkan tag <style> tepat sebelum tag penutup </head>
+    "@append" => '"<style>.dark-mode { background: #000; color: #fff; }</style>"'
+],
+"body" => [
+    // Menyisipkan elemen HTML tepat setelah tag pembuka <body>
+    "@prepend" => '"<div class=\"alert\">Anda login sebagai Admin!</div>"'
+]
+```
+
+### 6. Recursive/Nested Selectors
 Anda bisa menelusuri elemen yang lebih menjorok ke dalam (children) menggunakan standar penulisan Selector CSS biasa di sub-array. Selector yang bersarang (nested) jangkauan XPath pencariannya akan dilakukan sebatas pada internal elemen pembungkus (relatif) saja. Ini membuat parsing 10x lipat lebih akurat dan minim bentrokan di memori global.
 ```php
 "#profile" => [

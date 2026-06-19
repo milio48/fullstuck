@@ -178,6 +178,26 @@ function render_template(string $templatePath, array $data, array $rules, string
                         unset($value['@html']);
                     }
 
+                    if (isset($value['@append'])) {
+                        // Logic Directive: @append (Insert raw HTML at the end of node's children)
+                        foreach ($targetNodes as $node) {
+                            $marker = $getMarker();
+                            $replacements[$marker] = "<?= {$value['@append']} ?? '' ?>";
+                            $node->appendChild($dom->createTextNode($marker));
+                        }
+                        unset($value['@append']);
+                    }
+
+                    if (isset($value['@prepend'])) {
+                        // Logic Directive: @prepend (Insert raw HTML at the beginning of node's children)
+                        foreach ($targetNodes as $node) {
+                            $marker = $getMarker();
+                            $replacements[$marker] = "<?= {$value['@prepend']} ?? '' ?>";
+                            $node->insertBefore($dom->createTextNode($marker), $node->firstChild);
+                        }
+                        unset($value['@prepend']);
+                    }
+
                     if (isset($value['@foreach'])) {
                         // Logic Directive: @foreach
                         $templateNode = $nodes->item(0);

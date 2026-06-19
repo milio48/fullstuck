@@ -95,6 +95,8 @@ if ($route === 'profile') {
         "title" => '$pageTitle', 
         "h3" => ["@text" => '$subJudul'],
         "span.content" => ["@html" => '$htmlContent'],
+        "head" => ["@append" => '"<style> .injected-style { border: 2px dashed purple; padding: 10px; } </style>"'],
+        "main" => ["@prepend" => '"<div class=\"alert\">Ini hasil injeksi @prepend di awal &lt;main&gt;</div>"'],
 
         // 2. MANIPULASI ATRIBUT
         "a.external" => ["[href]" => '$linkUrl', "[target]" => '"_blank"'],
