@@ -2,8 +2,8 @@
 /**
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
- * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.1.0.md
- * 💡 Version: 0.1.0 | FST_HASH: 61e76cc5b3b50b9bfc1fe55974cda6a9777677ed1e17826d7851c1786b79b35c
+ * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.2.0.md
+ * 💡 Version: 0.2.0 | FST_HASH: 418c061bce6ab34d1e1293f04bfa1a13db244f8ce5421fecaf51854259541c66
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -1906,7 +1906,8 @@ HTML;
             'Views' => [
                 'fst_view',
                 'fst_partial',
-                'fst_serve_static_file'
+                'fst_serve_static_file',
+                'fst_template'
             ],
             'Request' => ['fst_uri', 'fst_method', 'fst_input', 'fst_request', 'fst_file', 'fst_is_spa', 'fst_spa_target'],
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
@@ -2237,6 +2238,267 @@ HTML;
         fst_redirect($admin_base . '/plugins');
     }
 
+}
+
+// FILE: template.php
+function fst_template(string $templatePath, array $data, array $rules, string $cacheDir = __DIR__ . '/build-template', bool $forceRebuild = false): void {
+    if (!file_exists($templatePath)) {
+        throw new \RuntimeException("Template not found: {$templatePath}");
+    }
+
+    if (!file_exists($cacheDir)) {
+        mkdir($cacheDir, 0755, true);
+    }
+    
+    $cacheFile = $cacheDir . '/' . basename($templatePath) . '.php';
+
+    
+    if ($forceRebuild || !file_exists($cacheFile) || filemtime($templatePath) > filemtime($cacheFile)) {
+        
+        $dom = new DOMDocument();
+        libxml_use_internal_errors(true);
+        $html = file_get_contents($templatePath);
+        if ($html) {
+            
+            $dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        }
+        libxml_clear_errors();
+        
+        $xpath = new DOMXPath($dom);
+        $replacements = [];
+        $markerCount = 0;
+        
+        
+        $getMarker = function() use (&$markerCount) {
+            $markerCount++;
+            return "@@__FST_MARKER_{$markerCount}__@@";
+        };
+
+        $css2xpath = function(string $selector): string {
+            $selector = trim($selector);
+            
+            
+            if (str_starts_with($selector, '//') || str_starts_with($selector, './/')) {
+                return $selector;
+            }
+            
+            
+            if (strpos($selector, ':') !== false || strpos($selector, '+') !== false || strpos($selector, '~') !== false) {
+                return './/FST_BLACKLISTED_NODE';
+            }
+            
+            $paths = [];
+            foreach (explode(',', $selector) as $sel) {
+                $sel = trim($sel);
+                $sel = preg_replace('/\s*>\s*/', '/', $sel); 
+                $sel = preg_replace('/\s+/', '//', $sel); 
+                $sel = preg_replace('/#([\w\-]+)/', '[@id="$1"]', $sel); 
+                $sel = preg_replace('/\.([\w\-]+)/', '[contains(concat(" ", normalize-space(@class), " "), " $1 ")]', $sel); 
+                
+                
+                $sel = preg_replace('/\[([\w\-]+)=([\'"]?.*?[\'"]?)\]/', '[@$1=$2]', $sel);
+                
+                $sel = preg_replace('/\[([\w\-]+)\]/', '[@$1]', $sel);
+                
+                $sel = preg_replace('/(^|\/|\|)(\[)/', '$1*$2', $sel);
+                
+                
+                if (!str_starts_with($sel, '/') && !str_starts_with($sel, '.')) {
+                    $sel = './/' . $sel;
+                }
+                
+                $paths[] = $sel;
+            }
+            return implode(' | ', $paths);
+        };
+
+        
+        $applyRules = function(array $currentRules, ?DOMNode $context = null) use (&$applyRules, $xpath, &$replacements, $getMarker, $dom, $css2xpath) {
+            foreach ($currentRules as $key => $value) {
+                
+                
+                if (str_starts_with($key, '[') && str_ends_with($key, ']')) {
+                    if ($context instanceof DOMElement) {
+                        $attrName = substr($key, 1, -1);
+                        if ($value === '@remove') {
+                            $context->removeAttribute($attrName);
+                        } else {
+                            $marker = $getMarker();
+                            $context->setAttribute($attrName, $marker);
+                            $replacements[$marker] = "<?= htmlspecialchars({$value} ?? '', ENT_QUOTES, 'UTF-8') ?>";
+                        }
+                    }
+                    continue;
+                }
+
+                
+                if (str_starts_with($key, '@')) {
+                    continue;
+                }
+
+                
+                $isSingleSelection = false;
+                if (str_starts_with($key, '^')) {
+                    $isSingleSelection = true;
+                    $key = substr($key, 1);
+                }
+
+                $xpathSel = $css2xpath($key);
+                $nodes = $context ? $xpath->query($xpathSel, $context) : $xpath->query($xpathSel);
+                
+                if ($nodes === false || $nodes->length === 0) continue;
+
+                $targetNodes = [];
+                if ($isSingleSelection) {
+                    $targetNodes[] = $nodes->item(0);
+                } else {
+                    foreach ($nodes as $n) $targetNodes[] = $n;
+                }
+
+                
+                if (is_string($value)) {
+                    if ($value === '@remove') {
+                        foreach ($targetNodes as $node) {
+                            $node->parentNode->removeChild($node);
+                        }
+                        continue;
+                    }
+
+                    foreach ($targetNodes as $node) {
+                        $marker = $getMarker();
+                        $node->nodeValue = $marker;
+                        $replacements[$marker] = "<?= htmlspecialchars({$value} ?? '', ENT_QUOTES, 'UTF-8') ?>";
+                    }
+                } 
+                
+                elseif (is_array($value)) {
+                    
+                    if (isset($value['@if'])) {
+                        foreach ($targetNodes as $node) {
+                            $startMarker = $getMarker();
+                            $endMarker = $getMarker();
+                            
+                            $replacements[$startMarker] = "<?php if ({$value['@if']}): ?>";
+                            $replacements[$endMarker] = "<?php endif; ?>";
+                            
+                            $startTextNode = $dom->createTextNode($startMarker);
+                            $endTextNode = $dom->createTextNode($endMarker);
+                            
+                            $node->parentNode->insertBefore($startTextNode, $node);
+                            if ($node->nextSibling) {
+                                $node->parentNode->insertBefore($endTextNode, $node->nextSibling);
+                            } else {
+                                $node->parentNode->appendChild($endTextNode);
+                            }
+                        }
+                        unset($value['@if']);
+                    }
+
+                    if (isset($value['@text'])) {
+                        
+                        foreach ($targetNodes as $node) {
+                            $marker = $getMarker();
+                            $node->nodeValue = $marker;
+                            $replacements[$marker] = "<?= htmlspecialchars({$value['@text']} ?? '', ENT_QUOTES, 'UTF-8') ?>";
+                        }
+                        unset($value['@text']);
+                    }
+
+                    if (isset($value['@html'])) {
+                        
+                        foreach ($targetNodes as $node) {
+                            $marker = $getMarker();
+                            $node->nodeValue = $marker;
+                            $replacements[$marker] = "<?= {$value['@html']} ?? '' ?>";
+                        }
+                        unset($value['@html']);
+                    }
+
+                    if (isset($value['@append'])) {
+                        
+                        foreach ($targetNodes as $node) {
+                            $marker = $getMarker();
+                            $replacements[$marker] = "<?= {$value['@append']} ?? '' ?>";
+                            $node->appendChild($dom->createTextNode($marker));
+                        }
+                        unset($value['@append']);
+                    }
+
+                    if (isset($value['@prepend'])) {
+                        
+                        foreach ($targetNodes as $node) {
+                            $marker = $getMarker();
+                            $replacements[$marker] = "<?= {$value['@prepend']} ?? '' ?>";
+                            $node->insertBefore($dom->createTextNode($marker), $node->firstChild);
+                        }
+                        unset($value['@prepend']);
+                    }
+
+                    if (isset($value['@foreach'])) {
+                        
+                        $templateNode = $nodes->item(0);
+                        $container = $templateNode->parentNode;
+                        
+                        $foreachStr = $value['@foreach'];
+                        unset($value['@foreach']); 
+                        
+                        $startMarker = $getMarker();
+                        $endMarker = $getMarker();
+                        
+                        $replacements[$startMarker] = "<?php foreach ({$foreachStr}): ?>";
+                        $replacements[$endMarker] = "<?php endforeach; ?>";
+                        
+                        
+                        $container->insertBefore($dom->createTextNode($startMarker), $templateNode);
+                        if ($templateNode->nextSibling) {
+                            $container->insertBefore($dom->createTextNode($endMarker), $templateNode->nextSibling);
+                        } else {
+                            $container->appendChild($dom->createTextNode($endMarker));
+                        }
+                        
+                        
+                        for ($i = 1; $i < $nodes->length; $i++) {
+                            $nodeToRemove = $nodes->item($i);
+                            if ($nodeToRemove->parentNode) {
+                                $nodeToRemove->parentNode->removeChild($nodeToRemove);
+                            }
+                        }
+                        
+                        
+                        if (!empty($value)) {
+                            $applyRules($value, $templateNode);
+                        }
+                        
+                    } else {
+                        
+                        if (!empty($value)) {
+                            foreach ($targetNodes as $node) {
+                                $applyRules($value, $node);
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        
+        $applyRules($rules);
+        
+        $htmlOut = $dom->saveHTML();
+        
+        $htmlOut = str_replace('<?xml encoding="utf-8" ?>', '', $htmlOut);
+        
+        
+        foreach ($replacements as $marker => $phpCode) {
+            $htmlOut = str_replace($marker, $phpCode, $htmlOut);
+        }
+        
+        file_put_contents($cacheFile, $htmlOut);
+    }
+
+    
+    extract($data, EXTR_SKIP);
+    require $cacheFile;
 }
 
 // FILE: bootstrap.php

@@ -595,7 +595,8 @@ HTML;
             'Views' => [
                 'fst_view',
                 'fst_partial',
-                'fst_serve_static_file'
+                'fst_serve_static_file',
+                'fst_template'
             ],
             'Request' => ['fst_uri', 'fst_method', 'fst_input', 'fst_request', 'fst_file', 'fst_is_spa', 'fst_spa_target'],
             'Routing' => ['fst_route', 'fst_get', 'fst_post', 'fst_put', 'fst_patch', 'fst_delete', 'fst_any', 'fst_group'],
