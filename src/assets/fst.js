@@ -182,6 +182,16 @@ document.addEventListener('submit', async function(e) {
             window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, '', finalUrl);
         }
         
+        /* Eksekusi ulang tag <script> (skip fst-spa-agent dan data-spa-ignore) */
+        const scripts = targetElement.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+            if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
+            const newScript = document.createElement('script');
+            Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+            newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+        
         document.dispatchEvent(new Event('fst:load'));
     } catch (err) {
         window.location.reload();

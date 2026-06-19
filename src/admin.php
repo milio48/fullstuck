@@ -286,7 +286,6 @@ HTML;
     function fst_admin_show_monitor() {
         fst_admin_check_auth();
         $fst_config = fst_app('config');
-        $fst_pdo = fst_app('pdo');
 
         $update_banner = '';
         $remote_data = fst_admin_get_remote_info();
@@ -342,32 +341,18 @@ HTML;
 
         // Cek Koneksi DB
         $db_status = '';
-        $db_driver = $fst_config['database']['driver'] ?? 'none';
+        $default_conn = $fst_config['database']['default'] ?? 'main';
+        $db_driver = $fst_config['database']['connections'][$default_conn]['driver'] ?? 'none';
         
         if ($db_driver === 'none') {
             $db_status = '<span style="color:orange;">⚠ Not Configured</span>';
         } else {
-            if ($fst_pdo === null) {
-                try {
-                    _fst_connect_db();
-                    $fst_pdo = fst_app('pdo');
-                } catch (Exception $e) {
-                    // Error ditangani oleh _fst_connect_db
-                }
-            }
-
-            if ($fst_pdo) { 
-                try {
-                    $stmt = $fst_pdo->query("SELECT 1");
-                    $stmt->fetch();
-                    $db_status = '<span style="color:green;">✔ OK</span> (Driver: ' . $db_driver . ')';
-                } catch (Exception $e) {
-                    $db_status = '<span style="color:red;">❌ FAILED</span>: ' . $e->getMessage();
-                    $errors[] = "Database connection test failed: " . $e->getMessage();
-                }
-            } else {
-                $db_status = '<span style="color:red;">❌ FAILED</span> (Could not initialize connection)';
-                $errors[] = "Database connection could not be established. Check 'fullstuck.json' or server logs.";
+            try {
+                fst_db('ROW', 'SELECT 1', [], $default_conn);
+                $db_status = '<span style="color:green;">✔ OK</span> (Driver: ' . $db_driver . ')';
+            } catch (Exception $e) {
+                $db_status = '<span style="color:red;">❌ FAILED</span>: ' . (fst_is_safe_to_debug() ? $e->getMessage() : 'Connection error.');
+                $errors[] = "Database connection test failed: " . $e->getMessage();
             }
         }
 
