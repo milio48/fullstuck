@@ -32,6 +32,8 @@ Keamanan adalah nyawa bagi sistem templating yang merender data secara dinamis. 
 | `"selector" => '...'` | **Shorthand Text**: Menimpa *nodeValue* elemen langsung. Aman dari XSS. | `"h1" => '$title'` |
 | `"@text" => '...'` | **Safe Text**: Menimpa isi teks secara aman (sama dengan shorthand, namun dipakai bila ada properti/atribut lain di blok yang sama). | `"@text" => '$desc'` |
 | `"@html" => '...'` | **Raw HTML**: Merender teks langsung sebagai HTML asli. **Peringatan: Bypasses XSS Protection**. Cocok untuk WYSIWYG. | `"@html" => '$content'` |
+| `"@append" => '...'` | **Append HTML**: Menyisipkan raw HTML secara non-destruktif di **akhir** kumpulan anak elemen (*beforeend*). | `"@append" => '"<style>...</style>"'` |
+| `"@prepend" => '...'` | **Prepend HTML**: Menyisipkan raw HTML secara non-destruktif di **awal** kumpulan anak elemen (*afterbegin*). | `"@prepend" => '"<div class=\"alert\">...</div>"'` |
 | `"@foreach" => '...'` | **Looper**: Mengulangi elemen DOM beserta *child*-nya untuk data *Array*. Menghapus elemen duplikat otomatis. | `"@foreach" => '$items as $i'` |
 | `"@if" => '...'` | **Conditional**: Membungkus elemen dengan blok `if` PHP. | `"@if" => '$isActive'` |
 | `"[attr]" => '...'` | **Attribute**: Menimpa nilai *attribute* HTML (contoh `href`, `src`, `class`, `data-*`). | `"[href]" => '$url'` |
