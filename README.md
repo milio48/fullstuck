@@ -18,9 +18,9 @@
 
 ## 🤖 AI Agent / Vibe Coder Setup (Recommended)
 
-Jika Anda menggunakan *AI coding assistant*, cukup salin *prompt* di bawah ini untuk memulai proyek secara instan:
-
-> "Unduh https://raw.githubusercontent.com/milio48/fullstuck/main/fullstuck.php lalu jalankan php fullstuck.php init --db=sqlite --admin-pass=stuck --admin-url=/stuck --spa=yes --scaffold=yes --htaccess=yes. Pelajari fullstuck_v*.md. Jalankan php -S localhost:8000 fullstuck.php dan berikan ringkasan instalasi."
+```text
+Install FullStuck.php : https://raw.githubusercontent.com/milio48/fullstuck/main/docs/ai-setup.md
+```
 
 ---
 
