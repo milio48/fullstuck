@@ -50,7 +50,7 @@ fst_post('/simpan', function() {
 
 Jika Anda menggunakan *AI coding assistant*, cukup salin *prompt* di bawah ini untuk memulai proyek secara instan:
 
-> "Unduh `https://raw.githubusercontent.com/milio48/fullstuck/main/fullstuck.php` lalu jalankan `php fullstuck.php init --db=sqlite --admin-pass=admin --scaffold=yes --spa=yes`. Setelah selesai, langsung pelajari file dokumentasi di `docs/v0.2.0.md` agar kamu paham aturan mainnya. Terakhir, jalankan `php -S localhost:8000 fullstuck.php` lalu laporkan ringkasan setup."
+> "Unduh https://raw.githubusercontent.com/milio48/fullstuck/main/fullstuck.php lalu jalankan php fullstuck.php init --db=sqlite --admin-pass=stuck --admin-url=/stuck --spa=yes --scaffold=yes --htaccess=yes. Pelajari fullstuck_v*.md. Jalankan php -S localhost:8000 fullstuck.php dan berikan ringkasan instalasi."
 
 ---
 
