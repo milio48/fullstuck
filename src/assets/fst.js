@@ -52,7 +52,7 @@ async function _fstNavigate(url, targetSelector, pushHistory, triggerElement = n
 
         const scripts = targetElement.querySelectorAll('script');
         scripts.forEach(oldScript => {
-            if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
+            if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-fst-ignore')) return;
             const newScript = document.createElement('script');
             Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
             newScript.appendChild(document.createTextNode(oldScript.innerHTML));
@@ -70,7 +70,7 @@ async function _fstNavigate(url, targetSelector, pushHistory, triggerElement = n
 document.addEventListener('click', async function(e) {
     if (e.defaultPrevented) return;
     const link = e.target.closest('a');
-    if (!link || !link.href || link.hasAttribute('data-no-spa') || link.classList.contains('no-spa') || link.target === '_blank' || link.hasAttribute('download') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (!link || !link.href || link.hasAttribute('data-fst-no-spa') || link.classList.contains('no-spa') || link.target === '_blank' || link.hasAttribute('download') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return;
     e.preventDefault();
 
     const targetSelector = link.getAttribute('data-fst-target') || 'body';
@@ -95,10 +95,10 @@ window.addEventListener('popstate', function(e) {
                 Array.from(newBody.attributes).forEach(attr => document.body.setAttribute(attr.name, attr.value));
             }
             targetElement.innerHTML = e.state.fstHtml;
-            /* 3. Eksekusi ulang script (skip fst-spa-agent dan data-spa-ignore) */
+            /* 3. Eksekusi ulang script (skip fst-spa-agent dan data-fst-ignore) */
             const scripts = targetElement.querySelectorAll('script');
             scripts.forEach(oldScript => {
-                if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
+                if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-fst-ignore')) return;
                 const newScript = document.createElement('script');
                 Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
@@ -122,7 +122,7 @@ document.dispatchEvent(new Event('fst:load'));
 document.addEventListener('submit', async function(e) {
     if (e.defaultPrevented) return;
     const form = e.target;
-    if (form.hasAttribute('data-no-spa') || form.classList.contains('no-spa')) return;
+    if (form.hasAttribute('data-fst-no-spa') || form.classList.contains('no-spa')) return;
     
     e.preventDefault();
     
@@ -198,10 +198,10 @@ document.addEventListener('submit', async function(e) {
             window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, '', finalUrl);
         }
         
-        /* Eksekusi ulang tag <script> (skip fst-spa-agent dan data-spa-ignore) */
+        /* Eksekusi ulang tag <script> (skip fst-spa-agent dan data-fst-ignore) */
         const scripts = targetElement.querySelectorAll('script');
         scripts.forEach(oldScript => {
-            if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
+            if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-fst-ignore')) return;
             const newScript = document.createElement('script');
             Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
             newScript.appendChild(document.createTextNode(oldScript.innerHTML));
