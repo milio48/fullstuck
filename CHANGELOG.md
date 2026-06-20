@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **View**: Added `fst_template` for ultra-minimalist declarative HTML DOM templating without inline PHP tags.
 
 ### Fixed
+- **SPA**: Fixed `X-FST-Redirect` handler in both link click and form submit doing hard reload instead of SPA navigation. Redirect now triggers `_fstNavigate()` for seamless PRG (Post/Redirect/Get) without page reload.
+- **SPA**: Refactored `fst.js` to extract shared navigation logic into reusable `_fstNavigate()` helper function.
+- **Router**: Fixed `fst_group('')` with empty prefix producing double-slash paths (`//add`) that resulted in 404 errors.
+
+### Docs
+- **CSRF**: Added explicit documentation that the CSRF field name must be `_token` when using static `.html` forms.
+- **Template**: Added `@text` directive to DSL API reference (was implemented but undocumented).
+
+### Fixed
 - **Security**: Fixed XSS vulnerability in Admin Configuration Editor by escaping raw JSON output.
 - **Security**: Fixed potential XSS execution in SPA `X-FST-Body-Attrs` injection by replacing `innerHTML` with `DOMParser`.
 - **Security**: Hardened `fst_view()` with an extension whitelist (`php`, `html`, `htm`) to prevent sensitive data exposure via path traversal.

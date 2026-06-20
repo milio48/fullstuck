@@ -1,36 +1,25 @@
-document.addEventListener('click', async function(e) {
-    if (e.defaultPrevented) return;
-    const link = e.target.closest('a');
-    if (!link || !link.href || link.hasAttribute('data-no-spa') || link.classList.contains('no-spa') || link.target === '_blank' || link.hasAttribute('download') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    e.preventDefault();
-
-    /* Ambil selector target dan opsi history */
+/* Helper: SPA Navigate — fetch URL with SPA headers and inject to DOM */
+async function _fstNavigate(url, targetSelector, pushHistory) {
     const reqHeader = document.querySelector('script#fst-spa-agent')?.getAttribute('data-req-header') || 'X-FST-Request';
     const targetHeader = document.querySelector('script#fst-spa-agent')?.getAttribute('data-target-header') || 'X-FST-Target';
-    const targetSelector = link.getAttribute('data-fst-target') || 'body';
-    const isHistoryOptOut = link.getAttribute('data-fst-history') === 'false';
-
-    /* Tambahkan class 'fst-loading' ke elemen targetSelector */
     const targetElement = document.querySelector(targetSelector);
     if (targetElement) targetElement.classList.add('fst-loading');
 
     try {
         const headers = { [reqHeader]: 'true', [targetHeader]: targetSelector };
-        const response = await fetch(link.href, { headers });
-        const redirectUrl = response.headers.get('X-FST-Redirect');
-        if (redirectUrl) { window.location.href = redirectUrl; return; }
-        if (!response.ok) { window.location.href = link.href; return; }
+        const response = await fetch(url, { headers });
+        if (!response.ok) { window.location.href = url; return; }
 
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('text/html')) {
-            window.location.href = link.href;
+            window.location.href = url;
             return;
         }
 
         const html = await response.text();
         const newTitle = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
         if (newTitle) document.title = newTitle[1];
-        
+
         const bodyAttrs = response.headers.get('X-FST-Body-Attrs');
         if (bodyAttrs !== null && targetSelector === 'body') {
             const parser = new DOMParser();
@@ -42,18 +31,13 @@ document.addEventListener('click', async function(e) {
 
         if (!targetElement) throw new Error('Target not found');
 
-        /* Dispatch event 'fst:unload' ke document */
         document.dispatchEvent(new Event('fst:unload'));
-
-        /* Ganti innerHTML targetElement dengan html dari response */
         targetElement.innerHTML = html;
 
-        /* Jika isHistoryOptOut false, jalankan history.pushState menyimpan stateObj: { fstHtml: html, fstTarget: targetSelector } */
-        if (!isHistoryOptOut) {
-            window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, '', link.href);
+        if (pushHistory) {
+            window.history.pushState({ fstHtml: html, fstTarget: targetSelector, fstBodyAttrs: bodyAttrs }, '', url);
         }
 
-        /* Eksekusi ulang tag <script> (skip fst-spa-agent dan data-spa-ignore) */
         const scripts = targetElement.querySelectorAll('script');
         scripts.forEach(oldScript => {
             if (oldScript.id === 'fst-spa-agent' || oldScript.hasAttribute('data-spa-ignore')) return;
@@ -63,14 +47,24 @@ document.addEventListener('click', async function(e) {
             oldScript.parentNode.replaceChild(newScript, oldScript);
         });
 
-        /* Dispatch event 'fst:load' ke document */
         document.dispatchEvent(new Event('fst:load'));
     } catch (err) {
-        window.location.href = link.href;
+        window.location.href = url;
     } finally {
-        /* Hapus class 'fst-loading' dari elemen targetSelector */
         if (targetElement) targetElement.classList.remove('fst-loading');
     }
+}
+
+document.addEventListener('click', async function(e) {
+    if (e.defaultPrevented) return;
+    const link = e.target.closest('a');
+    if (!link || !link.href || link.hasAttribute('data-no-spa') || link.classList.contains('no-spa') || link.target === '_blank' || link.hasAttribute('download') || link.hostname !== window.location.hostname || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    e.preventDefault();
+
+    const targetSelector = link.getAttribute('data-fst-target') || 'body';
+    const isHistoryOptOut = link.getAttribute('data-fst-history') === 'false';
+
+    await _fstNavigate(link.href, targetSelector, !isHistoryOptOut);
 });
 
 window.addEventListener('popstate', function(e) {
@@ -148,9 +142,16 @@ document.addEventListener('submit', async function(e) {
         }
         
         const response = await fetch(finalUrl, fetchOptions);
+
+        /* SPA-Aware Redirect: server kirim header ini alih-alih 302 Location */
         const redirectUrl = response.headers.get('X-FST-Redirect');
-        if (redirectUrl) { window.location.href = redirectUrl; return; }
+        if (redirectUrl) {
+            if (targetElement) targetElement.classList.remove('fst-loading');
+            await _fstNavigate(redirectUrl, targetSelector, true);
+            return;
+        }
         
+        /* Fallback: jika developer bypass fst_redirect() dan pakai header() manual */
         if (response.redirected) {
             window.location.href = response.url;
             return;

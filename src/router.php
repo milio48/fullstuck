@@ -93,7 +93,12 @@ function fst_group($prefix, $callback, $middleware = []) {
     $parent_prefix = fst_app('route_prefix');
     $parent_middleware = fst_app('group_middleware') ?? [];
     
-    $fst_route_prefix = rtrim($parent_prefix, '/') . '/' . trim($prefix, '/');
+    $trimmed_prefix = trim($prefix, '/');
+    if ($trimmed_prefix === '') {
+        $fst_route_prefix = $parent_prefix;
+    } else {
+        $fst_route_prefix = rtrim($parent_prefix, '/') . '/' . $trimmed_prefix;
+    }
     fst_app('route_prefix', $fst_route_prefix);
     
     if (!is_array($middleware)) $middleware = [$middleware];
