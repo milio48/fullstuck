@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.2.0.md
- * 💡 Version: 0.2.0 | FST_HASH: c40e7dcfe163eb406a331cdf1e856d55f22944d1be65240424836bb89eeb3151
+ * 💡 Version: 0.2.0 | FST_HASH: 4b43d81a725f831a2409a3e9f7b9e7a1a1caaae0b36fdf67c440821346dc3b16
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -407,6 +407,14 @@ function fst_db_rollback($connection = null) {
 
 function fst_db($mode, $sql, $params = [], $connection = null) {
     $pdo = _fst_get_pdo($connection);
+    
+    
+    foreach ($params as $k => $v) {
+        if (is_array($v) || is_object($v)) {
+            throw new Exception("Database Error: Parameter bind [{$k}] tidak boleh berupa array atau object.");
+        }
+    }
+    
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $normalizedSql = strtoupper(trim($sql));
@@ -461,11 +469,12 @@ function fst_db_insert($table, $data, $options = []) {
     $columns = array_map(fn($k) => fst_db_quote_ident($k, $conn), array_keys($data));
     $placeholders = array_fill(0, count($data), '?');
     $sql = "INSERT INTO {$t} (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
-    return fst_db('EXEC', $sql, array_values($data), $conn);
+    $res = fst_db('EXEC', $sql, array_values($data), $conn);
+    return $res['last_id'];
 }
 
 function fst_db_update($table, $data, $conditions = [], $options = []) {
-    if (empty($conditions)) return false; 
+    if (empty($conditions)) throw new Exception("Database Error: UPDATE statement requires conditions to prevent accidental mass updates."); 
     if (empty($data)) return false;
     $conn = $options['connection'] ?? null;
     $t = fst_db_quote_ident($table, $conn);
@@ -485,11 +494,12 @@ function fst_db_update($table, $data, $conditions = [], $options = []) {
         }
         $sql .= " WHERE " . implode(" AND ", $where);
     }
-    return fst_db('EXEC', $sql, $params, $conn);
+    $res = fst_db('EXEC', $sql, $params, $conn);
+    return $res['affected_rows'];
 }
 
 function fst_db_delete($table, $conditions, $options = []) {
-    if (empty($conditions)) return false; 
+    if (empty($conditions)) throw new Exception("Database Error: DELETE statement requires conditions to prevent accidental mass deletion."); 
     $conn = $options['connection'] ?? null;
     $t = fst_db_quote_ident($table, $conn);
     $where = [];
@@ -499,7 +509,8 @@ function fst_db_delete($table, $conditions, $options = []) {
         $params[] = $v;
     }
     $sql = "DELETE FROM {$t} WHERE " . implode(" AND ", $where);
-    return fst_db('EXEC', $sql, $params, $conn);
+    $res = fst_db('EXEC', $sql, $params, $conn);
+    return $res['affected_rows'];
 }
 
 function fst_db_row($table, $conditions = [], $options = []) {
@@ -2502,7 +2513,11 @@ HTML;
 }
 
 // FILE: template.php
-function fst_template(string $templatePath, array $data, array $rules, string $cacheDir = __DIR__ . '/build-template', bool $forceRebuild = false): void {
+function fst_template(string $templatePath, array $data, array $rules, string $cacheDir = null, bool $forceRebuild = false): void {
+    if ($cacheDir === null) {
+        $cacheDir = defined('FST_ROOT_DIR') ? FST_ROOT_DIR . '/view-cache' : sys_get_temp_dir() . '/fst_view_cache';
+    }
+    
     if (!file_exists($templatePath)) {
         throw new \RuntimeException("Template not found: {$templatePath}");
     }

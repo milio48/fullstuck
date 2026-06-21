@@ -95,6 +95,14 @@ function fst_db_rollback($connection = null) {
 
 function fst_db($mode, $sql, $params = [], $connection = null) {
     $pdo = _fst_get_pdo($connection);
+    
+    // [PATCH] Mencegah error PDO generik jika parameter bind berupa array
+    foreach ($params as $k => $v) {
+        if (is_array($v) || is_object($v)) {
+            throw new Exception("Database Error: Parameter bind [{$k}] tidak boleh berupa array atau object.");
+        }
+    }
+    
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $normalizedSql = strtoupper(trim($sql));
@@ -149,11 +157,12 @@ function fst_db_insert($table, $data, $options = []) {
     $columns = array_map(fn($k) => fst_db_quote_ident($k, $conn), array_keys($data));
     $placeholders = array_fill(0, count($data), '?');
     $sql = "INSERT INTO {$t} (" . implode(", ", $columns) . ") VALUES (" . implode(", ", $placeholders) . ")";
-    return fst_db('EXEC', $sql, array_values($data), $conn);
+    $res = fst_db('EXEC', $sql, array_values($data), $conn);
+    return $res['last_id'];
 }
 
 function fst_db_update($table, $data, $conditions = [], $options = []) {
-    if (empty($conditions)) return false; 
+    if (empty($conditions)) throw new Exception("Database Error: UPDATE statement requires conditions to prevent accidental mass updates."); 
     if (empty($data)) return false;
     $conn = $options['connection'] ?? null;
     $t = fst_db_quote_ident($table, $conn);
@@ -173,11 +182,12 @@ function fst_db_update($table, $data, $conditions = [], $options = []) {
         }
         $sql .= " WHERE " . implode(" AND ", $where);
     }
-    return fst_db('EXEC', $sql, $params, $conn);
+    $res = fst_db('EXEC', $sql, $params, $conn);
+    return $res['affected_rows'];
 }
 
 function fst_db_delete($table, $conditions, $options = []) {
-    if (empty($conditions)) return false; 
+    if (empty($conditions)) throw new Exception("Database Error: DELETE statement requires conditions to prevent accidental mass deletion."); 
     $conn = $options['connection'] ?? null;
     $t = fst_db_quote_ident($table, $conn);
     $where = [];
@@ -187,7 +197,8 @@ function fst_db_delete($table, $conditions, $options = []) {
         $params[] = $v;
     }
     $sql = "DELETE FROM {$t} WHERE " . implode(" AND ", $where);
-    return fst_db('EXEC', $sql, $params, $conn);
+    $res = fst_db('EXEC', $sql, $params, $conn);
+    return $res['affected_rows'];
 }
 
 function fst_db_row($table, $conditions = [], $options = []) {

@@ -10,7 +10,11 @@
  * @param string $cacheDir Folder tujuan penyimpanan cache
  * @param bool $forceRebuild Paksa recompile mengabaikan cache
  */
-function fst_template(string $templatePath, array $data, array $rules, string $cacheDir = __DIR__ . '/build-template', bool $forceRebuild = false): void {
+function fst_template(string $templatePath, array $data, array $rules, string $cacheDir = null, bool $forceRebuild = false): void {
+    if ($cacheDir === null) {
+        $cacheDir = defined('FST_ROOT_DIR') ? FST_ROOT_DIR . '/view-cache' : sys_get_temp_dir() . '/fst_view_cache';
+    }
+    
     if (!file_exists($templatePath)) {
         throw new \RuntimeException("Template not found: {$templatePath}");
     }

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SPA**: Restored hard reload fallback using `document.open()` to preserve POST method stack traces on 500 errors.
 - **Template**: Fixed `fst_template()` not inheriting global variables registered via `fst_view_share()`. Shared data is now merged automatically just like `fst_view()`.
 - **Router**: Fixed `fst_group('')` with empty prefix producing double-slash paths (`//add`) that resulted in 404 errors.
+- **Database**: Fixed `fst_db_insert`, `fst_db_update`, `fst_db_delete` to return scalar values (`last_id` / `affected_rows`) to strictly adhere to API documentation.
+- **Database**: Fixed silent failure on mass `UPDATE`/`DELETE` by throwing explicit exceptions when `$conditions` are empty.
+- **Database**: Fixed PDO generic exceptions when passing array as bind parameter by explicitly checking and throwing readable errors.
+- **Template**: Fixed `fst_template()` default `$cacheDir` targeting `__DIR__` (inside core) to `FST_ROOT_DIR/view-cache`.
 
 ### Docs
 - **API Reference**: Added explicit return types to the entire API Cheat Sheet (Database, Security, HTTP, Session, etc) to improve DX and eliminate guesswork.
