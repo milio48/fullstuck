@@ -12,7 +12,7 @@
 
 **FullStuck.php** adalah *micro-framework* yang mengembalikan kesederhanaan PHP. Seluruh *core engine* berada dalam **satu file tunggal**, memberikan Anda *routing* statis, *database* PDO (SQLite/PostgreSQL/MySQL), templating, dan keajaiban **Zero-Config SPA** tanpa butuh folder `vendor/` atau instalasi *Composer*.
 
-🌐 **[Kunjungi Landing Page Resmi](https://milio48.github.io/fullstuck/)**
+🌐 **[Kunjungi Landing Page Resmi](https://fullstuck.biz.id/)**
 
 ---
 
