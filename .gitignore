@@ -9,3 +9,8 @@ router.php
 /views/
 /assets/
 /fst-plugins/
+
+# Node.js / VitePress
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/

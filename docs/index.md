@@ -1,9 +1,40 @@
-# 🚀 Welcome to FullStuck.php
+---
+layout: home
 
-**Micro-framework PHP satu-file untuk membangun Web App dan REST API secepat kilat.**
+hero:
+  name: "FullStuck.php"
+  text: "Zero-Config PHP Framework"
+  tagline: "Micro-framework satu-file untuk membangun Web App & REST API secepat kilat, ramah AI, dan built-in SPA."
+  actions:
+    - theme: brand
+      text: Mulai Cepat v0.2.0
+      link: /v0.2.0
+    - theme: alt
+      text: Panduan AI Setup
+      link: /ai-setup
+    - theme: alt
+      text: GitHub Repo
+      link: https://github.com/milio48/fullstuck
 
-FullStuck.php menggabungkan kesederhanaan PHP klasik dengan kenyamanan pengembangan modern. Dirancang khusus untuk skenario *Fast Prototyping*, *Shared Hosting*, dan kolaborasi dengan **AI Coding Assistant**.
-
+features:
+  - icon: 📦
+    title: Distribusi Satu File
+    details: Cukup satu file fullstuck.php. Bebas dari folder vendor/ yang berat, Composer, atau konfigurasi server rumit.
+  - icon: ⚡
+    title: Zero-Config SPA
+    details: Navigasi instan dengan Fragment Rendering dan History Caching tanpa menulis JavaScript tambahan.
+  - icon: 🎨
+    title: DOM-Based Templating
+    details: File HTML Anda 100% murni tanpa tag PHP. Logika injeksi dikelola secara aman dan terpusat di PHP.
+  - icon: 🤖
+    title: AI-Agent Friendly
+    details: Dokumentasi terkonsolidasi satu-file dirancang khusus untuk meminimalkan token context asisten AI Anda.
+  - icon: 🎛️
+    title: Built-in Admin Dashboard
+    details: Panel admin modern di /stuck untuk edit konfigurasi, memantau integritas file, dan satu-klik instal plugin.
+  - icon: 🔒
+    title: Hardened Security
+    details: Proteksi CSRF otomatis, sanitasi path traversal, session fixation protection, dan whitelist IP bawaan.
 ---
 
 ## 💡 Filosofi Utama
@@ -35,31 +66,3 @@ fst_get('/', function() {
 <h1>Hello, <span>Placeholder</span>!</h1>
 <p>Dijalankan dengan FullStuck v0.2.0</p>
 ```
-
----
-
-## 📖 Arsip Dokumentasi
-
-Silakan pilih versi dokumentasi yang sesuai dengan proyek Anda:
-
-| Versi | Status | Link Dokumentasi |
-|---|---|---|
-| **v0.2.0** | **Stable (Latest)** | 📖 **[Lihat Dokumentasi v0.2.0](v0.2.0.md)** |
-| **v0.1.0** | **Legacy** | 📖 **[Lihat Dokumentasi v0.1.0](v0.1.0.md)** |
-
----
-
-## 📅 Riwayat Perubahan (Changelog)
-
-Untuk melihat daftar lengkap fitur baru, perbaikan bug, dan perubahan versi, silakan baca file **[CHANGELOG.md](https://github.com/milio48/fullstuck/blob/main/CHANGELOG.md)** yang berada di *root* repository.
-
----
-
-## 🏗️ Referensi Lainnya
-
-- 🏗️ **[Arsitektur Framework](ARCHITECTURE.md)**: Memahami konsep modularitas dan proses kompilasi.
-- 🔌 **[Panduan Pembuatan Plugin](PLUGIN_DEVELOPMENT.md)**: Cara memperluas framework dengan plugin.
-- 🤝 **[Panduan Kontribusi](../CONTRIBUTING.md)**: Cara membantu pengembangan core FullStuck.
-
----
-[Kembali ke GitHub Repository](https://github.com/milio48/fullstuck)
