@@ -5,13 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [v0.2.0] - 2026-06-23
 
 ### Added
 - **Core**: Added CLI Installer support `php fullstuck.php init [args]` for headless setup and scaffolding (e.g., `--db=sqlite --scaffold=yes --htaccess=yes`).
 - **Database**: Automatically inject high-performance PRAGMA settings (`journal_mode=WAL`, `busy_timeout=5000`, `foreign_keys=ON`) for SQLite connections to enable robust concurrency and prevent "database is locked" errors.
 - **Database**: Added `fst_db_begin()`, `fst_db_commit()`, and `fst_db_rollback()` helpers for safe and easy PDO transaction management.
 - **Installer**: Upgraded the default auto-scaffolding template to a fully functional interactive "To-Do List" application. This showcase directly demonstrates SPA form submissions, `fst_template()` directives, and SQLite auto-migration out-of-the-box.
+- **SPA**: Added global client-side router method `fst.go(url, options)` for programmatic SPA navigation.
+- **SPA**: Made `fst:loading` custom event cancelable using `e.preventDefault()`, allowing developers to abort navigations (e.g., for dirty-form checking).
 
 ### Fixed
 - **SPA**: Fixed critical DX issue where 500 Internal Server Errors were swallowed during SPA form submissions/navigations and forced a GET redirect to the original URL (resulting in 404). Unsuccessful responses now correctly render the error HTML directly into the DOM (via `document.open()`) to preserve the stack trace.
