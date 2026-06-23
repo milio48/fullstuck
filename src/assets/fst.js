@@ -17,9 +17,14 @@ async function _fstNavigate(url, targetSelector, pushHistory, triggerElement = n
     const targetElement = document.querySelector(targetSelector);
     const indicator = _fstGetIndicatorClass(triggerElement);
     if (targetElement) targetElement.classList.add(...indicator.split(' '));
-    document.dispatchEvent(new CustomEvent('fst:loading', { 
-        detail: { url, targetSelector, triggerElement } 
-    }));
+    const loadingEvent = new CustomEvent('fst:loading', { 
+        detail: { url, targetSelector, triggerElement },
+        cancelable: true
+    });
+    if (!document.dispatchEvent(loadingEvent)) {
+        if (targetElement) targetElement.classList.remove(...indicator.split(' '));
+        return;
+    }
 
     try {
         const headers = { [reqHeader]: 'true', [targetHeader]: targetSelector };
@@ -227,9 +232,14 @@ document.addEventListener('submit', async function(e) {
             fetchOptions.body = formData;
         }
 
-        document.dispatchEvent(new CustomEvent('fst:loading', { 
-            detail: { url: finalUrl, targetSelector, triggerElement: form } 
-        }));
+        const loadingEvent = new CustomEvent('fst:loading', { 
+            detail: { url: finalUrl, targetSelector, triggerElement: form },
+            cancelable: true
+        });
+        if (!document.dispatchEvent(loadingEvent)) {
+            if (targetElement) targetElement.classList.remove(...indicator.split(' '));
+            return;
+        }
         
         const response = await fetch(finalUrl, fetchOptions);
 
@@ -293,3 +303,24 @@ document.addEventListener('submit', async function(e) {
         if (targetElement) targetElement.classList.remove(...indicator.split(' '));
     }
 });
+
+/* Global router API */
+window.fst = {
+    go: async function(url, options = {}) {
+        const defaultTarget = document.querySelector('script#fst-spa-agent')?.getAttribute('data-default-target') || 'body';
+        const target = options.target || defaultTarget;
+        const history = options.history !== false;
+
+        const virtualTrigger = {
+            getAttribute: (attr) => {
+                if (attr === 'data-fst-scroll') {
+                    return options.scroll !== undefined ? String(options.scroll) : null;
+                }
+                if (attr === 'data-fst-indicator') return options.indicator || null;
+                return null;
+            }
+        };
+
+        await _fstNavigate(url, target, history, virtualTrigger);
+    }
+};
