@@ -108,16 +108,14 @@ function fst_template(string $templatePath, array $data, array $rules, ?string $
             foreach ($currentRules as $key => $value) {
                 
                 // 1. Attribute Manipulation Directive (Wrapped in [...])
-                if (str_starts_with($key, '[') && str_ends_with($key, ']')) {
-                    if ($context instanceof DOMElement) {
-                        $attrName = substr($key, 1, -1);
-                        if ($value === '@remove') {
-                            $context->removeAttribute($attrName);
-                        } else {
-                            $marker = $getMarker();
-                            $context->setAttribute($attrName, $marker);
-                            $replacements[$marker] = "<?= htmlspecialchars({$value} ?? '', ENT_QUOTES, 'UTF-8') ?>";
-                        }
+                if (str_starts_with($key, '[') && str_ends_with($key, ']') && $context instanceof DOMElement && strpos($key, '=') === false) {
+                    $attrName = substr($key, 1, -1);
+                    if ($value === '@remove') {
+                        $context->removeAttribute($attrName);
+                    } else {
+                        $marker = $getMarker();
+                        $context->setAttribute($attrName, $marker);
+                        $replacements[$marker] = "<?= htmlspecialchars({$value} ?? '', ENT_QUOTES, 'UTF-8') ?>";
                     }
                     continue;
                 }

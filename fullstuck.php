@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.2.0.md
- * 💡 Version: 0.2.0 | FST_HASH: 46cd6222486f564787cc4f5327adf16bae8bebb658da9697882fd10c4b7134e0
+ * 💡 Version: 0.2.0 | FST_HASH: 673e331ade6494fea1d0759de1df219d35259c896995f25adcd142be922e24fa
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -2544,16 +2544,14 @@ function fst_template(string $templatePath, array $data, array $rules, ?string $
             foreach ($currentRules as $key => $value) {
                 
                 
-                if (str_starts_with($key, '[') && str_ends_with($key, ']')) {
-                    if ($context instanceof DOMElement) {
-                        $attrName = substr($key, 1, -1);
-                        if ($value === '@remove') {
-                            $context->removeAttribute($attrName);
-                        } else {
-                            $marker = $getMarker();
-                            $context->setAttribute($attrName, $marker);
-                            $replacements[$marker] = "<?= htmlspecialchars({$value} ?? '', ENT_QUOTES, 'UTF-8') ?>";
-                        }
+                if (str_starts_with($key, '[') && str_ends_with($key, ']') && $context instanceof DOMElement && strpos($key, '=') === false) {
+                    $attrName = substr($key, 1, -1);
+                    if ($value === '@remove') {
+                        $context->removeAttribute($attrName);
+                    } else {
+                        $marker = $getMarker();
+                        $context->setAttribute($attrName, $marker);
+                        $replacements[$marker] = "<?= htmlspecialchars({$value} ?? '', ENT_QUOTES, 'UTF-8') ?>";
                     }
                     continue;
                 }
