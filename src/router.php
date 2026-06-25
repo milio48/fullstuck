@@ -69,8 +69,8 @@ function fst_route($method, $path, $callback, $middleware = []) {
 
     // Strict Mode: Detect Duplicates
     foreach ($fst_routes[$method] ?? [] as $existing) {
-        if ($existing[0] === $method && $existing[3] === $full_original_path) {
-            fst_abort(500, "Duplicate route detected: [{$method}] {$full_original_path}. Each route must be unique.");
+        if ($existing[1] === $final_pattern) {
+            fst_abort(500, "Duplicate route pattern detected: [{$method}] {$full_original_path} conflicts with an existing route pattern. Each route pattern must be unique.");
         }
     }
 

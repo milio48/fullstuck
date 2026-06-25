@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Admin**: Fixed `fst_view_share` and `fst_spa_page` not being registered in the Scan Project function groups, causing them to appear as "Unknown".
 - **Database**: Removed redundant condition check in `fst_db_update()` (dead code after empty conditions validation).
+- **Router**: Improved duplicate route detection to compare compiled regex patterns (`$final_pattern`) instead of raw path strings, preventing false negatives when different path definitions produce identical routing patterns. Also fixed a stray closing brace introduced during the change.
 
 ### Added
 - **DX**: Replaced the bloated full documentation file (`fullstuck_v*.md`) downloaded during `php fullstuck.php init` with a concise, AI-friendly cheatsheet (`fullstuck_cheatsheet.md`) containing all essential API references, database helpers, validation rules, ruleset DSL syntax, and SPA events in a token-efficient format.

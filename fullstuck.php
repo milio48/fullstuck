@@ -3,7 +3,7 @@
  * 🚀 FULLSTUCK.PHP - The Zero-Config, AI-Friendly Framework
  * 🔗 Repository: https://github.com/milio48/fullstuck
  * 📚 Raw Docs: https://raw.githubusercontent.com/milio48/fullstuck/refs/heads/main/docs/v0.2.0.md
- * 💡 Version: 0.2.0 | FST_HASH: d6e520821ea2e82868ea0154d07ad2bbc58ca44e537d04976178a52fb7ff9286
+ * 💡 Version: 0.2.0 | FST_HASH: 7dd39188a9160698d03f78142db446995621b91e0f24164f20c8bf22bdbbaa24
  *
  * 🛑 ===================================================================== 🛑
  * 🤖 STRICT AI AGENT DIRECTIVE (LLM / VIBE CODER INSTRUCTIONS)
@@ -614,8 +614,8 @@ function fst_route($method, $path, $callback, $middleware = []) {
 
     
     foreach ($fst_routes[$method] ?? [] as $existing) {
-        if ($existing[0] === $method && $existing[3] === $full_original_path) {
-            fst_abort(500, "Duplicate route detected: [{$method}] {$full_original_path}. Each route must be unique.");
+        if ($existing[1] === $final_pattern) {
+            fst_abort(500, "Duplicate route pattern detected: [{$method}] {$full_original_path} conflicts with an existing route pattern. Each route pattern must be unique.");
         }
     }
 
